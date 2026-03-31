@@ -1,0 +1,3 @@
+# Hashes of file build rules.
+65caf2fd67d3d2a38632eaf6ce98e3ab CMakeFiles/regenerate_idl
+fa672bf24e886684b0d674b1faf65108 raylib/raylib/external/glfw/src/CMakeFiles/update_mappings
