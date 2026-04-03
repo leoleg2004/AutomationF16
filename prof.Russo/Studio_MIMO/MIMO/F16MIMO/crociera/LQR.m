@@ -12,8 +12,8 @@ nx = size(A_long, 1);
 nu = size(B_long, 2);
 
 % Pesi logica pura (Aggressivo)
-Q = 100 * eye(nx);
-R = 1 * eye(nu);
+Q = 1 * eye(nx);
+R = 5 * eye(nu);
 
 % Usa la funzione ufficiale lqr per calcolare le 3 variabili che volevi
 [K, P, E] = lqr(A_long, B_long, Q, R);
