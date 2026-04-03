@@ -65,51 +65,37 @@ grid on;
 title('Mappa Poli-Zeri del Sistema Longitudinale Minimo');
 
 % =========================================================================
-% VERIFICA FINALE: RGA SUL SISTEMA DISACCOPPIATO CON ETICHETTE
+% VERIFICA FINALE: RGA SUL SISTEMA DISACCOPPIATO
 % =========================================================================
 disp('--- Verifica RGA su G_disaccoppiataPseudoInversa ---');
 
-% 1. Calcoliamo il guadagno statico del sistema DOPO il disaccoppiamento
+% 1. Calcoliamo il guadagno statico e l'RGA
 K_dec = dcgain(G_disaccoppiataPseudoInversa);
-
-% 2. Calcoliamo la matrice RGA
-% (Usiamo la trasposta della pseudoinversa per gestire la matrice creata prima)
 RGA_dec = K_dec .* (pinv(K_dec).');
 
-% 3. Creiamo le etichette per rendere la matrice leggibile
-% Le uscite sono quelle fisiche del tuo modello
+% Nomi FISSI per le uscite (Asse Y) - Esattamente uguali a prima!
 nomi_uscite = {'Vt_out', 'alpha_out', 'q_out', 'xbdd', 'zbdd', 'nz'};
-% Gli ingressi ora sono i tuoi "Comandi Virtuali" (Reference)
-nomi_comandi = {'Cmd_Vt', 'Cmd_alpha', 'Cmd_q', 'Cmd_xbdd', 'Cmd_zbdd', 'Cmd_nz'};
+% Nomi dei comandi VIRTUALI (Asse X) - Sono 6 per la matrice quadrata
+nomi_comandi_virtuali = {'Cmd_Vt', 'Cmd_alpha', 'Cmd_q', 'Cmd_xbdd', 'Cmd_zbdd', 'Cmd_nz'};
 
-% 4. Convertiamo la matrice in una Tabella formattata
-RGA_table = array2table(round(RGA_dec, 4), ...
-    'RowNames', nomi_uscite, ...
-    'VariableNames', nomi_comandi);
-
-% 5. Stampiamo a schermo
-disp('Matrice RGA (Arrotondata e Mappata sui Canali di Volo):');
+% Stampiamo la Tabella a schermo
+RGA_table = array2table(round(RGA_dec, 4), 'RowNames', nomi_uscite, 'VariableNames', nomi_comandi_virtuali);
+disp('Matrice RGA Disaccoppiata:');
 disp(RGA_table);
 
-% =========================================================================
-% VISUALIZZAZIONE GRAFICA: HEATMAP DEL SISTEMA DISACCOPPIATO
-% =========================================================================
-% Creiamo una nuova figura
-figure('Name', 'Analisi RGA Post-Disaccoppiamento', 'Position', [150, 150, 750, 550]);
+% Creiamo la figura a destra per il confronto
+figure('Name', 'Analisi RGA Post-Disaccoppiamento', 'Position', [820, 200, 700, 500]);
+h2 = heatmap(nomi_comandi_virtuali, nomi_uscite, RGA_dec);
 
-% Generiamo la Heatmap passando le etichette corrette
-h_dec = heatmap(nomi_comandi, nomi_uscite, RGA_dec);
+% Formattazione Heatmap
+h2.Title = 'RGA Sistema Disaccoppiato (Virtuale)';
+h2.XLabel = 'Comandi Virtuali (Reference)';
+h2.YLabel = 'Uscite Fisiche (Sensori)';
+colormap(h2, parula); 
+h2.CellLabelFormat = '%.2f';
 
-% Formattazione per renderla "da tesi"
-h_dec.Title = 'Efficacia del Disaccoppiamento in Avanti (Target: Diagonale = 1)';
-h_dec.XLabel = 'Comandi Virtuali (Riferimenti di Controllo)';
-h_dec.YLabel = 'Uscite Fisiche (Sensori)';
-
-% Usiamo la colormap standard di MATLAB (parula) 
-colormap(parula); 
-
-% Arrotondiamo a 2 o 3 decimali per non sovrapporre i numeri nelle celle
-h_dec.CellLabelFormat = '%.3f';
+% STESSA IDENTICA SCALA DEL PRIMO GRAFICO
+h2.ColorLimits = [-1, 1];
 
 %% Calcolo della Raggiungibilità / Controllabilità
 % Otteniamo il numero di variabili di stato
