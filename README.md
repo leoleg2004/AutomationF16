@@ -1,90 +1,89 @@
 🦅 F-16 Flight Control System (FCS) & Simulink-FlightGear Integration
+This project implements a non-linear 6-DOF (Six Degrees of Freedom) simulation of an F-16 Fighting Falcon fighter jet, interfacing a mathematical model in MATLAB/Simulink with the FlightGear graphics engine for real-time visualization via hardware input (Joystick/HOTAS).
 
-Questo progetto implementa una simulazione 6-DOF (Six Degrees of Freedom) non lineare di un caccia F-16 Fighting Falcon, interfacciando un modello matematico in MATLAB/Simulink con il motore grafico di FlightGear per la visualizzazione in tempo reale tramite input hardware (Joystick/HOTAS).
-🚀 Panoramica del Progetto
+🚀 Project Overview
 
-L'F-16 è celebre per essere stato il primo caccia progettato con Stabilità Statica Rilassata (Relaxed Static Stability). Il suo baricentro è posizionato artificialmente all'indietro per massimizzare l'agilità in combattimento.
-Questo rende l'aereo (il "Plant" o "Modello Nudo") intrinsecamente e fisicamente inguidabile da un essere umano senza l'ausilio di un computer di bordo.
+The F-16 is renowned for being the first fighter aircraft designed with Relaxed Static Stability. Its center of gravity is artificially shifted aft to maximize combat agility. This makes the aircraft (the "Plant" or "Bare Model") inherently and physically un-flyable by a human without the assistance of an onboard computer.
 
-L'obiettivo di questo progetto è progettare, testare e validare i sistemi di controllo del volo (FCS) necessari per stabilizzare il velivolo e permettere il pilotaggio, affrontando la natura fortemente accoppiata delle sue dinamiche attraverso un'Analisi MIMO (Multiple-Input Multiple-Output).
-📐 Analisi MIMO dell'F-16
+The goal of this project is to design, test, and validate the Flight Control Systems (FCS) required to stabilize the aircraft and enable piloting, addressing the highly coupled nature of its dynamics through a MIMO (Multiple-Input Multiple-Output) Analysis.
 
-L'F-16 non può essere trattato come un insieme di sistemi isolati. Ogni input influenza molteplici output (es. il rollio induce imbardata avversa). Il sistema è definito da:
+📐 F-16 MIMO Analysis
 
-Vettore di Input (Comandi):
+The F-16 cannot be treated as a collection of isolated systems. Every input influences multiple outputs (e.g., roll induces adverse yaw). The system is defined by:
 
-    Thrust (T): Spinta del motore (da 1000 a 60000 lbf).
+Input Vector (Commands):
 
-    Elevator (δe​): Elevatore per il controllo del beccheggio (max ≈±25∘ o 0.4 rad).
+Thrust (T): Engine thrust (from 1000 to 60000 lbf).
 
-    Aileron (δa​): Alettoni per il controllo del rollio.
+Elevator (δe): Elevator for pitch control (max ≈ ±25° or 0.4 rad).
 
-    Rudder (δr​): Timone per il controllo dell'imbardata.
+Aileron (δa): Ailerons for roll control.
 
-Vettore di Output/Stati (Sensori):
+Rudder (δr): Rudder for yaw control.
 
-    Velocità (V,U,W)
+Output/State Vector (Sensors):
 
-    velocità angolari (p,q,r)
+Velocities (V, U, W)
 
-    Angoli di Eulero (ϕ,θ,ψ)
+Angular velocities (p, q, r)
 
-    angolo di attacco e di slide(alfa, beta)
+Euler Angles (ϕ, θ, ψ)
 
-    Altitudine (h)
+Angle of attack and sideslip angle (α, β)
 
-🧠 Strategie di Controllo (FCS)
+Altitude (h)
 
-Per domare l'instabilità, il progetto divide il controllo in due canali principali, utilizzando tre diverse architetture di controllo per fini di ricerca e comparazione:
-1. Controllo Longitudinale (Beccheggio / Pitch)
+🧠 Control Strategies (FCS)
 
-Il canale longitudinale è il più critico a causa del polo a parte reale positiva (instabilità) del modello a catena aperta. L'obiettivo è tracciare l'angolo di attacco (α) o il pitch rate (q), prevenendo lo stallo profondo.
-2. Controllo Latero-Direzionale (Rollio e Imbardata / Roll & Yaw)
+To tame the instability, the project divides the control into two main channels, utilizing three different control architectures for research and comparison purposes:
 
-Unisce il controllo degli alettoni e del timone per coordinare le virate, minimizzando l'angolo di derapata (β) e gestendo l'accoppiamento cinematico (Dutch Roll).
-Algoritmi Implementati:
+1. Longitudinal Control (Pitch)
+The longitudinal channel is the most critical due to the positive real part pole (instability) of the open-loop model. The goal is to track the angle of attack (α) or the pitch rate (q), preventing a deep stall.
 
-    PID (Proportional-Integral-Derivative): L'approccio classico. Richiede il disaccoppiamento forzato del sistema MIMO in loop SISO (Single-Input Single-Output). Utile come baseline, ma limitato nelle manovre ad alto angolo di attacco.
+2. Lateral-Directional Control (Roll & Yaw)
+It combines aileron and rudder control to coordinate turns, minimizing the sideslip angle (β) and managing kinematic coupling (Dutch Roll).
 
-    LQR (Linear Quadratic Regulator): Un controllore a feedback di stato ottimo. Gestisce perfettamente la natura MIMO dell'F-16, bilanciando in modo elegante la reattività dell'aereo con il consumo di energia degli attuatori, calcolando una matrice di guadagno K su un modello linearizzato attorno a un punto di trim (es. Mach 0.8 a 5000 ft).
+Implemented Algorithms:
 
-    MPC (Model Predictive Control): Lo stato dell'arte. Guarda a un orizzonte temporale futuro per ottimizzare la traiettoria e, soprattutto, gestisce i vincoli fisici in modo nativo. Evita matematicamente che i comandi superino l'escursione massima delle alette (es. satura a 0.4 rad) o la spinta massima del motore, prevenendo crash numerici e stalli aerodinamici causati da comandi pilota troppo bruschi.
+PID (Proportional-Integral-Derivative): The classic approach. It requires the forced decoupling of the MIMO system into SISO (Single-Input Single-Output) loops. Useful as a baseline, but limited in high angle of attack maneuvers.
 
-🔌 Setup dell'Interfaccia Hardware / Software
+LQR (Linear Quadratic Regulator): An optimal state feedback controller. It perfectly manages the MIMO nature of the F-16, elegantly balancing aircraft responsiveness with actuator energy consumption by calculating a gain matrix K on a linearized model around a trim point (e.g., Mach 0.8 at 5000 ft).
 
-La simulazione in tempo reale ("Hardware-In-The-Loop" simulato) richiede il corretto instradamento dei segnali tra Joystick, Simulink e FlightGear.
-Multiplexing dei Segnali (Cruciale)
+MPC (Model Predictive Control): The state of the art. It looks at a future time horizon to optimize the trajectory and, above all, natively manages physical constraints. It mathematically prevents commands from exceeding the maximum deflection of the control surfaces (e.g., saturates at 0.4 rad) or the maximum engine thrust, preventing numerical crashes and aerodynamic stalls caused by abrupt pilot inputs.
 
-Il modello Simulink (il blocco di volo) si aspetta che i segnali in ingresso siano rigorosamente vettorizzati in questo ordine prima di entrare nel Plant:
+🔌 Hardware / Software Interface Setup
 
-    Thrust (Spinta)
+The real-time simulation (simulated "Hardware-In-The-Loop") requires the correct routing of signals between the Joystick, Simulink, and FlightGear.
 
-    Elevator (Elevatore - In radianti)
+Signal Multiplexing (Crucial)
+The Simulink model (the flight block) expects the input signals to be strictly vectorized in this order before entering the Plant:
 
-    Aileron (Alettoni - In radianti)
+Thrust
 
-    Rudder (Timone - In radianti)
+Elevator (in radians)
 
-Collegamento con FlightGear
+Aileron (in radians)
 
-Per far sì che FlightGear diventi un puro "schermo" visivo senza interferire con la sofisticata fisica calcolata da Simulink, il suo motore aerodinamico interno (FDM) deve essere disabilitato.
+Rudder (in radians)
 
-Stringa di avvio per FlightGear:
-Inserire nelle opzioni aggiuntive (Additional Options):
+Connection with FlightGear
+To ensure that FlightGear acts purely as a visual "screen" without interfering with the sophisticated physics calculated by Simulink, its internal aerodynamic engine (FDM) must be disabled.
+
+Startup string for FlightGear:
+Insert into the Additional Options (Plaintext):
+
 Plaintext
-
 --fdm=null --native-fdm=socket,in,60,,5502,udp
+--fdm=null: Turns off FlightGear's internal physics.
 
-    --fdm=null: Spegne la fisica interna di FlightGear.
+--native-fdm=...: Sets the simulator to listen on UDP port 5502, at 60Hz, waiting for positional packets generated by Simulink.
 
-    --native-fdm=...: Mette il simulatore in ascolto sulla porta UDP 5502, a 60Hz, in attesa dei pacchetti posizionali generati da Simulink.
+🛠️ How to Start the Simulation
 
-🛠️ Come avviare la Simulazione
+Initialization: Run the main MATLAB script (e.g., init.m or setup.m) to load the constants, geometry, aerodynamic coefficients, and calculate the Trim point (initial altitude and velocity in feet/second).
 
-    Inizializzazione: Eseguire lo script MATLAB principale (es. init.m o setup.m) per caricare le costanti, la geometria, i coefficienti aerodinamici e calcolare il punto di Trim (altitudine iniziale e velocità in piedi/secondo).
+Start FlightGear: Launch FlightGear with the network options configured as above. Wait for the scenario to load.
 
-    Avvio di FlightGear: Lanciare FlightGear con le opzioni di rete configurate come sopra. Attendere il caricamento dello scenario.
+Hardware Check: Ensure the HOTAS is connected and centered (an asymmetrical input at time T=0 on an unstable aircraft causes instantaneous numerical errors).
 
-    Check Hardware: Assicurarsi che l'HOTAS sia collegato e centrato (un input asimmetrico al tempo T=0 su un velivolo instabile causa errori numerici istantanei).
-
-    Avvio Simulink: Premere PLAY su Simulink. Il sistema inizierà a calcolare le equazioni di stato e trasmetterà le coordinate a FlightGear.
+Start Simulink: Press PLAY on Simulink. The system will begin calculating the state equations and transmitting the coordinates to FlightGear.
