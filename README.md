@@ -23,11 +23,13 @@ Vettore di Input (Comandi):
 
 Vettore di Output/Stati (Sensori):
 
-    Velocità (V,α,β)
+    Velocità (V,U,W)
 
-    Tassi angolari (p,q,r)
+    velocità angolari (p,q,r)
 
     Angoli di Eulero (ϕ,θ,ψ)
+
+    angolo di attacco e di slide(alfa, beta)
 
     Altitudine (h)
 
