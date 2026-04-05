@@ -1,35 +1,45 @@
 % =========================================================================
-% SCOMPOSIZIONE AI VALORI SINGOLARI (SVD) IN ANELLO APERTO (Impianto G)
+% SCOMPOSIZIONE AI VALORI SINGOLARI (SVD) TOTALE IN ANELLO APERTO 
 % =========================================================================
+disp('--- SVD TOTALE della Matrice dei Guadagni Statici (Impianto Fisico) ---');
 
-disp('--- SVD della Matrice dei Guadagni Statici G = G(0) ---');
-% Estraiamo la matrice dei guadagni in continua (frequenza omega = 0)
-G_full = dcgain(sys_long_min);
+% 1. Calcolo della matrice G totale (6 uscite x 5 ingressi)
+G_full = -C_long * (A_long \ B_long) + D_long; 
+disp('Matrice G_full (6x5):');
+disp(G_full);
 
-% Estraiamo il sottosistema quadrato 2x2 per il controllo longitudinale
-% Assumendo: Ingressi = [Thrust, Elevator], Uscite = [Vt, q]
-G = G_full([1, 3], [1, 2]); 
-disp('Matrice G (2x2):');
-disp(G);
+% 2. Applicazione della Scomposizione ai Valori Singolari sull'intero sistema
+% MATLAB usa la convenzione G = U * S * V'
+% U_out = Direzioni di uscita (Sensori)
+% Sigma = Guadagni principali (Valori Singolari)
+% V_in  = Direzioni di ingresso associate (Attuatori)
+[U_out, Sigma, V_in] = svd(G_full);
 
-% Applicazione della Scomposizione ai Valori Singolari
-[Y, Sigma, U] = svd(G);
+% 3. Estrazione dei Valori Singolari (elementi sulla diagonale di Sigma)
+% Dato che la matrice è 6x5, avremo 5 valori singolari non nulli
+valori_singolari = diag(Sigma);
 
-disp('Matrice delle direzioni di uscita (Y):');
-disp(Y);
-disp('Matrice dei Valori Singolari (Sigma):');
-disp(Sigma);
-disp('Matrice delle direzioni di ingresso associate (U):');
-disp(U);
+disp('Valori Singolari del sistema (dal più forte al più debole):');
+disp(valori_singolari);
 
-% Calcolo del numero di condizionamento (gamma)
-sigma_bar = Sigma(1,1);       % Valore singolare massimo
-sigma_under = Sigma(2,2);     % Valore singolare minimo
-cond_num = sigma_bar / sigma_under;
+% 4. Analisi di Condizionamento
+sigma_max = valori_singolari(1);       % Il più grande (direzione più "facile")
+sigma_min = valori_singolari(end);     % Il più piccolo (direzione più "difficile")
+cond_num = sigma_max / sigma_min;      % Numero di condizionamento
 
-fprintf('Valore Singolare Massimo (sigma_bar) = %.4f\n', sigma_bar);
-fprintf('Valore Singolare Minimo (sigma_under) = %.4f\n', sigma_under);
-fprintf('Numero di Condizionamento (gamma) = %.4f\n\n', cond_num);
+fprintf('Valore Singolare Massimo (sigma_max) = %.4f\n', sigma_max);
+fprintf('Valore Singolare Minimo (sigma_min)  = %.4f\n', sigma_min);
+fprintf('Numero di Condizionamento (gamma)    = %.4f\n\n', cond_num);
 
-% Verifica matematica: G = Y * Sigma * U' (dove U' è la trasposta coniugata)
-% disp(Y * Sigma * U'); % Decommentare per verificare l'uguaglianza con G
+% =========================================================================
+% ANALISI FISICA DELLE DIREZIONI PRINCIPALI
+% =========================================================================
+disp('--- Analisi della Direzione di Massimo Guadagno ---');
+disp('Combinazione di ingressi (V_in) che genera la risposta più forte:');
+disp(V_in(:, 1));
+disp('Combinazione di uscite (U_out) che reagisce di più a questi ingressi:');
+disp(U_out(:, 1));
+
+disp('--- Analisi della Direzione di Minimo Guadagno ---');
+disp('Combinazione di ingressi (V_in) che genera la risposta più debole (spreco di energia):');
+disp(V_in(:, end));
