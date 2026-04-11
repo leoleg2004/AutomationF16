@@ -1191,6 +1191,7 @@ __MWOPC_PART_BEGIN__ /simulink/ScheduleCore.xml
       <type>RootOutport</type>
     </globalData>
     <priorityDirection>HighNumberLast</priorityDirection>
+    <defaultBarrierBehavior type="sltp.mm.core.BarrierBehavior" uuid="44264f1d-da32-405e-a7d2-7164c68e5252"/>
     <defaultEventBehavior type="sltp.mm.core.EventBehavior" uuid="7a1101e7-e490-4fa1-b47f-a72e7efc4468"/>
     <editorState type="sltp.mm.core.EditorState" uuid="3429ef35-ff8f-40e9-9e53-88ef0319603d">
       <isSynchronized>true</isSynchronized>
@@ -1220,15 +1221,24 @@ __MWOPC_PART_BEGIN__ /simulink/ScheduleCore.xml
             </rateSpec>
             <sti>0</sti>
           </rates>
+          <rates type="sltp.mm.core.Rate" uuid="0c61ca08-02ee-4688-ada1-afadef53cdbe">
+            <annotation>FiM</annotation>
+            <color>2105376255</color>
+            <rateIndex>1</rateIndex>
+            <rateSpec type="sltp.mm.core.RateSpec">
+              <offset>1.0</offset>
+              <period>0.0</period>
+            </rateSpec>
+            <sti>1</sti>
+          </rates>
         </tasks>
       </subgraph>
     </rootTask>
   </sltp.mm.core.Context>
 </sltp_graph>
-
 __MWOPC_PART_BEGIN__ /simulink/ScheduleEditor.xml
-<?xml version="1.0" encoding="utf-8"?>
-<sltp_editor version="1.1" packageUris="http://schema.mathworks.com/mf0/DiagramEditor/R2019a_20181107 http://schema.mathworks.com/mf0/SltpSyntax/R2023a_202207220222">
+<?xml version="1.0" encoding="UTF-8"?>
+<sltp_editor version="1.1" packageUris="http://schema.mathworks.com/mf0/DiagramEditor/R2019a_20181107 http://schema.mathworks.com/mf0/SltpSyntax/R2025a_202406271400">
   <diagram.editor.model.Diagram type="diagram.editor.model.Diagram" uuid="7046de32-678c-445f-8b12-bc9814811d25">
     <entities type="diagram.editor.model.Entity" uuid="586306f9-0028-4488-9a02-19d73eb24231">
       <position>0,0</position>
@@ -1390,6 +1400,11 @@ __MWOPC_PART_BEGIN__ /simulink/ScheduleEditor.xml
           <hasBlocks>true</hasBlocks>
           <rate>0</rate>
           <title>Cont</title>
+        </rates>
+        <rates type="sltp.mm.syntax.RateData">
+          <color>#7d7d7d</color>
+          <rate>[0, 1]</rate>
+          <title>FiM</title>
         </rates>
         <title>Cont</title>
         <type>base</type>
