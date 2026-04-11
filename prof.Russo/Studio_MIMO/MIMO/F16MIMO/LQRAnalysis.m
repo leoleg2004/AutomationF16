@@ -10,29 +10,35 @@ nu = size(B_long, 2);
 
 %% 2. SINTESI DEL CONTROLLORE LQR
 nx = size(A_long, 1);
-% ATTENZIONE: Prendiamo solo i veri attuatori (Thrust, Elevator, LEF)
-B_ctrl = B_long(:, 1:3); %Prende le righe e le prime 3 colonne;%ho filtrato i prime tre elemnti della matrice perche le ultime due ono le raffiche 
-%vento e non sono controllabili
 
-nu = size(B_ctrl, 2);
+% --- LA MODIFICA CHIAVE: ESTRAZIONE DI B_ctrl ---
+% Prendiamo tutte le righe (:), ma solo le prime 3 colonne (i veri attuatori)
+% Lasciamo fuori l'eventuale colonna del vento.
+B_ctrl = B_long(:, 1:3); 
+%la matrice B totale e l'isnie della Bctrl che prende i ingresso(Thrust,
+%Elevator, LEF) 
+%e tagliamo fuori la matrice Bwind che ha dentro i contributi del vettore
+%vento che però non sono controllabili dal mio lQR.
+
+% ATTENZIONE: Prendiamo solo i veri attuatori (Thrust, Elevator, LEF)
+nu = size(B_ctrl, 2); 
 
 disp('--- Variabili LQR calcolate ---');
 disp('Matrice di Riccati P calcolata e pronta per il costo terminale.');
 
 % Pesi logica pura (Aggressivo)
-Q = 1* eye(nx);
+Q = 10 * eye(nx);
 R = 1 * eye(nu);
 
-% Calcolo del guadagno ottimo K
+% Calcolo del guadagno ottimo K usando SOLO B_ctrl
 [K, P, E] = lqr(A_long, B_ctrl, Q, R);
 
 disp('--- Variabili LQR calcolate ---');
 disp('Guadagno K:'); disp(K);
 disp('Autovalori a ciclo chiuso (devono avere parte reale negativa):'); disp(E);
-
 %% 3. SIMULAZIONE A CICLO CHIUSO
 % Creiamo la matrice dinamica a ciclo chiuso A_cl = A - B*K
-A_cl = A_long - B_ctrl * K;
+A_cl = A_long - B_ctrl* K;
 
 % Creiamo il sistema State-Space a ciclo chiuso
 % (Non abbiamo ingressi esterni in questa simulazione, solo la condizione iniziale)
@@ -79,3 +85,26 @@ xlabel('Tempo [s]')
 ylabel('Comandi (u)')
 title('Sforzo di Controllo')
 grid on;
+
+
+
+% =========================================================================
+% VISUALIZZAZIONE GRAFICA DEI NUOVI POLI (Ciclo Chiuso)
+% =========================================================================
+
+% 1. Creazione del nuovo sistema "controllato" (ciclo chiuso)
+% Sostituiamo la matrice A originale con la nuova dinamica A_cl
+sys_cl = ss(A_cl, B_long, C_long, D_long);
+
+% 2. Generazione della Mappa Poli-Zeri
+figure('Name', 'Mappa Poli-Zeri a Ciclo Chiuso (LQR)', 'Position', [200, 200, 600, 500]);
+pzmap(sys_cl);
+grid on;
+
+% 3. Formattazione grafica per renderlo più leggibile
+title('Verifica Stabilità LQR: Posizione dei Nuovi Poli');
+xlabel('Asse Reale (Velocità di convergenza/divergenza)');
+ylabel('Asse Immaginario (Frequenza di oscillazione)');
+
+% Aggiungiamo una linea marcata sullo zero per evidenziare il limite di stabilità
+xline(0, 'k--', 'LineWidth', 1.5);
