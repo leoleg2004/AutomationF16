@@ -6,10 +6,10 @@ warning off all
 % Estraiamo le dimensioni dalle matrici
 nx = size(A_long, 1);
 
-nu = size(B_long, 2);
+nu_long = size(B_long, 2);
 
 %% 2. SINTESI DEL CONTROLLORE LQR
-nx = size(A_long, 1);
+
 
 % --- LA MODIFICA CHIAVE: ESTRAZIONE DI B_ctrl ---
 % Prendiamo tutte le righe (:), ma solo le prime 3 colonne (i veri attuatori)
@@ -19,7 +19,7 @@ B_ctrl = B_long(:, 1:3);
 %Elevator, LEF) 
 %e tagliamo fuori la matrice Bwind che ha dentro i contributi del vettore
 %vento che però non sono controllabili dal mio lQR.
-
+D_ctrl = D_long(:, 1:3);
 % ATTENZIONE: Prendiamo solo i veri attuatori (Thrust, Elevator, LEF)
 nu = size(B_ctrl, 2); 
 
@@ -29,9 +29,10 @@ disp('Matrice di Riccati P calcolata e pronta per il costo terminale.');
 % Pesi logica pura (Aggressivo)
 Q = 10 * eye(nx);
 R = 1 * eye(nu);
-
+R_long= 1*eye(nu_long);
 % Calcolo del guadagno ottimo K usando SOLO B_ctrl
 [K, P, E] = lqr(A_long, B_ctrl, Q, R);
+[K_long, P_long, E_long] = lqr(A_long, B_long, Q, R_long);
 
 disp('--- Variabili LQR calcolate ---');
 disp('Guadagno K:'); disp(K);
