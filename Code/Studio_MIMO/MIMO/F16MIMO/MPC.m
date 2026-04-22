@@ -1,113 +1,145 @@
-close all
-clc
-warning off all
+% =========================================================================
+% DETERMINISTIC MIMO MPC: RECOVERY VOLO DI CROCIERA F-16 (Con Integratore)
+% Dinamica: 4 stati [theta, q, U, W], 3 ingressi [Thrust, Elev, Flap]
+% =========================================================================
+disp('--- Inizializzazione MPC (Condizione Tranquilla con Tracking Perfetto) ---');
 
-%% Importo le librerie di Casadi
-addpath('/Users/leonardoleggeri/Desktop/AutomationF16/prof.Russo/Studio_MIMO/MIMO/F16MIMO/casadi')
-import casadi.*
+% 1. Definizione dell'Impianto Discreto
+Ts = 0.05; 
+nx = size(A_long, 1); % 4 stati
+nu = size(B_ctrl, 2); % 3 ingressi
 
-%% 1. ESTRAZIONE VARIABILI CON FUNZIONE LQR CLASSICA
-nx = size(A_long, 1);
-% ATTENZIONE: Prendiamo solo i veri attuatori (Thrust, Elevator, LEF)
-B_ctrl = B_long(:, 1:3); % Prende le righe e le prime 3 colonne;%ho filtrato i prime tre elemnti della matrice perche le ultime due ono le raffiche 
-%vento e non sono controllabili
+Cd = eye(nx); 
+Dd = zeros(nx, nu);
+sys_c = ss(A_long, B_ctrl, Cd, Dd);
 
-nu = size(B_ctrl, 2);
+sys_c.OutputName = {'theta', 'q', 'U', 'W'};
+sys_c.InputName  = {'Thrust', 'Elevator', 'Flap'};
+sys_c.InputGroup.MV = 1:nu;   
+sys_c.OutputGroup.MO = 1:nx;  
 
-% Pesi delle matrici quadratiche dell' LQR
-Q = 100 * eye(nx);
-R = 1 * eye(nu);
+sys_d = c2d(sys_c, Ts, 'zoh');
 
-[K, P, E] = lqr(A_long, B_ctrl, Q, R);
+% =========================================================================
+% 2. CREAZIONE OGGETTO MPC
+% =========================================================================
+Ky = 80; 
+Ku = 20;  
+mpcobj = mpc(sys_d, Ts, Ky, Ku);
+% =========================================================================
+% 3. VINCOLI FISICI
+% =========================================================================
+deg2rad = pi/180;
+mpcobj.MV(1).Min = -5000;
+mpcobj.MV(1).Max = 5000;
+mpcobj.MV(1).RateMin = -2000; 
+mpcobj.MV(1).RateMax = 2000;
+mpcobj.MV(2).Min = -25*deg2rad;
+mpcobj.MV(2).Max = 25*deg2rad;
+mpcobj.MV(2).RateMin = -60*deg2rad*Ts;
+mpcobj.MV(2).RateMax = 60*deg2rad*Ts; 
+mpcobj.MV(3).Min = -5*deg2rad;
+mpcobj.MV(3).Max = 25*deg2rad;
+mpcobj.MV(3).RateMin = -40*deg2rad*Ts;
+mpcobj.MV(3).RateMax = 40*deg2rad*Ts; 
+mpcobj.OV(4).Min = -100; 
+mpcobj.OV(4).Max = 100; 
 
-disp('--- Variabili LQR calcolate ---');
-disp('Matrice di Riccati P calcolata e pronta per il costo terminale.');
+% =========================================================================
+% 4. TUNING BILANCIATO
+% =========================================================================
+% Pesi sulle Uscite: [theta, q, U, W]
+% Theta deve andare a zero. U e W sono importanti ma secondari.
+mpcobj.Weights.OV = [200, 10, 10, 10]; 
 
-%% 2. MODELLO CASADI (F-16 Longitudinal Dynamics)
-x = MX.sym('x', nx);
-u = MX.sym('u', nu);
-ode = A_long * x + B_ctrl* u; % USO B_ctrl!
+% Pesi sugli Attuatori
+mpcobj.Weights.MV = [0, 0, 0]; 
 
-Ts = 0.05; % tempo di campionamento
-intg_options = struct;
-intg_options.tf = Ts;
-intg_options.number_of_finite_elements = 5;
-dae = struct;
-dae.x = x;
-dae.p = u;
-dae.ode = ode;
-intg = integrator('intg', 'rk', dae, intg_options);
-res = intg('x0', x, 'p', u); 
-x_next = res.xf;
-F = Function('F', {x, u}, {x_next}, {'x', 'p'}, {'x_next'}); 
+% Pesi sul Rateo degli Attuatori 
+% Rimettiamo un po' di "freno" per permettere all'integratore di 
+% trovare la posizione di equilibrio millimetrica senza overshoot
+mpcobj.Weights.ManipulatedVariablesRate = [0.1, 0.5, 0.5]; 
 
-%% 3. PROBLEMA DI CONTROLLO CASADI
-opti = casadi.Opti();
-N = 100;
+% =========================================================================
+% 5. SETUP SIMULAZIONE (Condizione Iniziale)
+% =========================================================================
+T_sim = 20; % Aumentiamo a 8 secondi per vedere l'effetto dell'integratore
+N = round(T_sim / Ts);
+t = (0:N) * Ts;
 
-% Optimization variables
-xf = opti.variable(nx, N+1);
-uf = opti.variable(nu, N);
-xk = opti.parameter(nx, 1); 
+%[theta; q; U; W]
+x0 = [0.2; 0.2; 20; -40];
 
-%% Cost function
-V = 0;
-for j = 1:N
-    L = (xf(:,j))' * Q * (xf(:,j)) + (uf(:,j))' * R * (uf(:,j));
-    V = V + L;
+r_sim = zeros(N, nx); % Riferimento: tornare a 0
+x_true = zeros(nx, N+1);  
+u_hist = zeros(nu, N+1);  
+x_true(:, 1) = x0; 
+
+% Inizializzazione memoria MPC al punto di partenza
+xmpc = mpcstate(mpcobj); 
+xmpc.Plant = x0; 
+
+disp('Simulazione in corso...');
+for i = 1:N
+    u_opt = mpcmove(mpcobj, xmpc, x_true(:, i), r_sim(i, :));
+    u_hist(:, i) = u_opt;
+    
+    % Propagazione modello reale
+    x_true(:, i+1) = sys_d.A * x_true(:, i) + sys_d.B * u_opt;
 end
-% Costo terminale con Matrice di Riccati P (Miglioramento rispetto all'esempio)
-costo_terminale = (xf(:,N+1))' * P * (xf(:,N+1));
-V = V + costo_terminale;
-opti.minimize(V);
+disp('Simulazione completata!');
 
-%% Constraints 
-opti.subject_to(xf(:,1) == xk);  % Initial condition
-% UN UNICO CICLO FOR PER TUTTI I VINCOLI!
-for j = 1:N
-    % 1. Vincolo Dinamico (predizione dinamica)
-    opti.subject_to(xf(:,j+1) == F(xf(:,j), uf(:,j))); 
-    
-    % 2. Vincolo su q applicato allo stato FUTURO
-    opti.subject_to(-0.4 <= xf(2,j+1) <= 0.4);
-    
-    % 3. Vincolo su w applicato allo stato FUTURO
-    opti.subject_to(-10 <= xf(4,j+1) <= 10); 
-    
-    % [OPZIONALE] Aggiungi qui le saturazioni degli attuatori uf(:,j) se vuoi un vero MPC
-end
+% =========================================================================
+% 6. GRAFICI
+% =========================================================================
+rad2deg = 180 / pi;
 
+% --- FIGURA 1: DINAMICA DEGLI STATI ---
+figure('Name', 'MPC F-16: Stati a Ciclo Chiuso (Azione Integrale)', 'Color', 'w', 'Position', [100, 100, 800, 600])
 
-%% Solver
-p_opts = struct('expand', true);
-s_opts = struct('max_iter', 1000, 'print_level', 0, 'sb', 'yes');
-opti.solver('ipopt', p_opts, s_opts);
-OPT_C = opti.to_function('OPT_C', {xk}, {uf, xf, V}, {'xk'}, {'uf_opt', 'xf_opt', 'V_opt'});
-
-%% 4. SIMULAZIONE E PLOT
-x0 = [1.5; 1; 10; 5]; 
-
-[uf_sol, xf_sol, V_sol] = OPT_C(x0);
-uf = full(uf_sol); 
-xf = full(xf_sol);
-
-%% Grafici
-figure('Name', 'CasADi: Pura logica MPC ')
 subplot(2, 1, 1)
-plot(xf(1,:), 'LineWidth', 2); hold on;
-plot(xf(2,:), 'LineWidth', 2);
-plot(xf(3,:), 'LineWidth', 2);
-plot(xf(4,:), 'LineWidth', 2);
-legend('\theta (Beccheggio)', 'q (Vel. Beccheggio)', 'U (Vel. X)', 'W (Vel. Z)')
-xlabel('samples') 
-ylabel('Stati')
+plot(t, x_true(1,:) * rad2deg, 'b', 'LineWidth', 2); hold on; % theta
+plot(t, x_true(2,:) * rad2deg, 'r', 'LineWidth', 2);          % q
+yline(0, 'k--', 'LineWidth', 1);
+legend('\theta (Pitch) [deg]', 'q (Pitch Rate) [deg/s]', 'Location', 'best')
+ylabel('Ampiezza [Gradi]')
+title('Dinamica Assetto (Inseguimento Perfetto Volo Livellato)')
 grid on;
 
 subplot(2, 1, 2)
-for k = 1:nu
-    stairs(uf(k,:), 'LineWidth', 2); hold on;
-end
-legend('Thrust', 'Elevator', 'LEF')
-xlabel('samples') 
-ylabel('Comandi (u)')
+plot(t, x_true(3,:), 'k', 'LineWidth', 2); hold on; % U
+plot(t, x_true(4,:), 'm', 'LineWidth', 2);          % W
+yline(0, 'k--', 'LineWidth', 1);
+legend('U (Vel. X) [ft/s]', 'W (Vel. Z / \approx \alpha) [ft/s]', 'Location', 'best')
+xlabel('Tempo [s]') 
+ylabel('Ampiezza [ft/s]')
+title('Dinamica Velocità e Incidenza')
+grid on;
+
+% --- FIGURA 2: SFORZO DEGLI ATTUATORI ---
+figure('Name', 'MPC F-16: Sforzo Attuatori', 'Color', 'w', 'Position', [150, 150, 800, 800])
+
+subplot(3, 1, 1)
+plot(t, u_hist(1,:), 'b', 'LineWidth', 2); hold on;
+yline(5000, 'r--', 'Max Thrust', 'LabelHorizontalAlignment', 'left'); 
+yline(-5000, 'r--', 'Min Thrust', 'LabelHorizontalAlignment', 'left');
+ylabel('Spinta [lbs]')
+title('Azione di Controllo: Manetta (Thrust)')
+grid on;
+
+subplot(3, 1, 2)
+plot(t, u_hist(2,:) * rad2deg, 'r', 'LineWidth', 2); hold on;
+yline(25, 'k--', 'Saturazione (+25°)'); 
+yline(-25, 'k--', 'Saturazione (-25°)');
+ylabel('Deflessione [deg]')
+title('Azione di Controllo: Equilibratore')
+grid on;
+
+subplot(3, 1, 3)
+plot(t, u_hist(3,:) * rad2deg, 'g', 'LineWidth', 2); hold on;
+yline(25, 'k--', 'Saturazione (+25°)'); 
+yline(-5, 'k--', 'Saturazione (-25°)');
+xlabel('Tempo [s]') 
+ylabel('Deflessione [deg]')
+title('Azione di Controllo: Leading Edge Flap')
 grid on;
