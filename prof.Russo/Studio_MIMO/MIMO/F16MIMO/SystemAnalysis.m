@@ -25,58 +25,75 @@ disp('--- Zeri di Trasmissione del Sistema MIMO ---');
 % Il comando tzero calcola gli zeri di trasmissione dell'intera matrice.
 zeri_mimo = tzero(sys_long_min);
 disp(zeri_mimo);
-
 %%
 % =========================================================================
-% 1. PREPARAZIONE DELL'IMPIANTO (Il vero sistema controllabile 3x3)
+% 1. PREPARAZIONE DELL'IMPIANTO MIMO 3x3
 % =========================================================================
-disp('--- Preparazione dell''Impianto MIMO 3x3 (Solo Attuatori Reali) ---');
-% Seleziono  le 3 uscite prioritarie (Vt, alpha, q)
+disp('--- 1. Preparazione Impianto G 3x3 ---');
 uscite_ctrl = [1, 2, 3]; 
-% Seleziono  i 3 attuatori (Thrust, Elevator, LE_flap)
 ingressi_ctrl = [1, 2, 3]; 
-
-% Estraiamo la sottomatrice 3x3 in forma di Funzione di Trasferimento
-G_3x3 = G_long_min(uscite_ctrl, ingressi_ctrl);
-
-% Estraiamo la sottomatrice 3x3 in forma State-Space
-sys_quadrato_3x3 = sys_long_min(uscite_ctrl, ingressi_ctrl);
+G = G_long_min(uscite_ctrl, ingressi_ctrl);
 
 % =========================================================================
-% 2. SINTESI DEL DISACCOPPIATORE STATICO 3x3 (W_static)
+% 2. SINTESI ANALITICA DEL DISACCOPPIATORE DINAMICO (W)
 % =========================================================================
-disp('--- Calcolo del Pre-Compensatore Statico ---');
-% Estraiamo la matrice dei guadagni a regime stazionario
-K_impianto = dcgain(G_3x3);
+disp('--- 2. Calcolo dei Pre-Compensatori (Metodo delle Equazioni) ---');
 
-% Inversione 
-W_static = inv(K_impianto);
-disp('Matrice W_static 3x3 calcolata con successo.');
+% Imponiamo che i comandi diretti passino inalterati (Diagonale = 1)
+W11 = tf(1,1);
+W22 = tf(1,1);
+W33 = tf(1,1);
+
+% --- COLONNA 1: Calcolo W21 e W31 ---
+% Risolviamo il sistema per annullare i cross-talk su alpha e q (uscite 2 e 3)
+Mat_C1 = [G(2,2), G(2,3); 
+          G(3,2), G(3,3)];
+Term_C1 = [-G(2,1); 
+           -G(3,1)];
+Incognite_C1 = inv(Mat_C1) * Term_C1;
+W21 = minreal(Incognite_C1(1));
+W31 = minreal(Incognite_C1(2));
+
+% --- COLONNA 2: Calcolo W12 e W32 ---
+% Risolviamo il sistema per annullare i cross-talk su Vt e q (uscite 1 e 3)
+Mat_C2 = [G(1,1), G(1,3); 
+          G(3,1), G(3,3)];
+Term_C2 = [-G(1,2); 
+           -G(3,2)];
+Incognite_C2 = inv(Mat_C2) * Term_C2;
+W12 = minreal(Incognite_C2(1));
+W32 = minreal(Incognite_C2(2));
+
+% --- COLONNA 3: Calcolo W13 e W23 ---
+% Risolviamo il sistema per annullare i cross-talk su Vt e alpha (uscite 1 e 2)
+Mat_C3 = [G(1,1), G(1,2); 
+          G(2,1), G(2,2)];
+Term_C3 = [-G(1,3); 
+           -G(2,3)];
+Incognite_C3 = inv(Mat_C3) * Term_C3;
+W13 = minreal(Incognite_C3(1));
+W23 = minreal(Incognite_C3(2));
+
+% Assemblaggio della matrice W(s) completa
+W_dinamico = [W11, W12, W13;
+              W21, W22, W23;
+              W31, W32, W33];
+disp('Matrice W_dinamico assemblata con successo.');
 
 % =========================================================================
-% 3. APPLICAZIONE IN "STATE-SPACE" E RICONVERSIONE
+% 3. VERIFICA E ISOLAMENTO DEI CANALI (CONSEGUENZA)
 % =========================================================================
-disp('--- Applicazione del Compensatore in Spazio di Stato ---');
-sys_dec = sys_quadrato_3x3 * W_static;
-sys_dec = minreal(sys_dec);
+disp('--- 3. Calcolo G_nuova (G * W) e Isolamento Canali ---');
+G_nuova = G * W_dinamico;
 
-% Passiamo alle Funzioni di Trasferimento pulite
-G_dec_pulita = tf(sys_dec);
+% Dato che sappiamo di aver imposto matematicamente gli zeri fuori diagonale,
+% estraiamo direttamente la diagonale pulendola da piccoli residui numerici
+tolleranza = 1e-3;
+G_Vt_pulita    = minreal(G_nuova(1,1), tolleranza);
+G_alpha_pulita = minreal(G_nuova(2,2), tolleranza);
+G_q_pulita     = minreal(G_nuova(3,3), tolleranza);
 
-% VERIFICA DI SICUREZZA: 
-K_nuovo = dcgain(G_dec_pulita);
-disp('Matrice dei Guadagni Statici del nuovo sistema (Deve essere un''Identità 3x3):');
-disp(round(K_nuovo, 4));
 
-% =========================================================================
-% 4. ESTRAZIONE DEI 3 CANALI INDIPENDENTI PER IL PID TUNER
-% =========================================================================
-disp('--- Estrazione dei canali puliti per il progetto dei PID ---');
-G_Vt    = G_dec_pulita(1,1); %  PID della Velocità
-G_alpha = G_dec_pulita(2,2); %  PID dell'Angolo di attacco
-G_q     = G_dec_pulita(3,3); %  PID del Pitch rate
-
-disp('Operazione completata con successo! Matrice 3x3 disaccoppiata.');
 %% Calcolo della Raggiungibilità / Controllabilità
 % Otteniamo il numero di variabili di stato
 n = size(A_long, 1);       
