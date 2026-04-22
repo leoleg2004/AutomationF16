@@ -1,4 +1,4 @@
-clc, clear all, close all, warning off;
+
 % Nonlinear Discrete Time MPC — Levenberg-Marquardt Optimization
 % System: x1[n+1] = 0.1 - x1^2 + x1*x2
 %         x2[n+1] = -x1 + exp(-x2) + u
