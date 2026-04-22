@@ -1,75 +1,106 @@
- % =========================================================================
-% VALUTAZIONE ZERI E PROPRIETÀ BLOCCANTE (Sottosistema 2x2)
 % =========================================================================
-disp('--- Analisi Proprietà Bloccante su Sottosistema 2x2 ---');
+% VALUTAZIONE ZERI E PROPRIETÀ BLOCCANTE (Sistema Completo 3x3)
+% =========================================================================
+disp('--- Analisi Proprietà Bloccante su Sistema Completo 3x3 ---');
 
-% 1. CREAZIONE DEL SOTTOSISTEMA 2x2
+% Estraiamo le dimensioni e le sottomatrici
+n_stati = size(A_long, 1);
+ingressi_3x3 = [1, 2, 3]; % Thrust, Elevator, LE_Flap
+uscite_3x3 = [1, 2, 3];   % V_t, alpha, q
+
+B_3x3 = B_long(:, ingressi_3x3);
+C_3x3 = C_long(uscite_3x3, :);
+D_3x3 = D_long(uscite_3x3, ingressi_3x3);
+
+% Modello in Spazio di Stato 3x3
+sys_3x3 = ss(A_long, B_3x3, C_3x3, D_3x3);
+
+% Calcolo degli zeri invarianti
+Zeri_3x3 = tzero(sys_3x3);
+
+disp('Zeri Invarianti calcolati per il sistema 3x3:');
+disp(Zeri_3x3); % Sarà un array vuoto []
+
+% Verifica e Spiegazione a schermo
+if isempty(Zeri_3x3)
+    disp('---------------------------------------------------------');
+    disp('RISULTATO STRUTTURALE: Il sistema 3x3 NON ha zeri invarianti.');
+    disp('Non esiste alcuna frequenza lambda (reale o complessa) capace');
+    disp('di bloccare la trasmissione degli ingressi verso le uscite.');
+    disp('La matrice di sistema ha sempre rango pieno.');
+    disp('---------------------------------------------------------');
+end
+
+% =========================================================================
+% CONTROPROVA: Proprietà Bloccante su Sottosistema Sottoattuato (2x2)
+% =========================================================================
+disp('--- Analisi Proprietà Bloccante Sottosistema 2x2 ---');
+
 n_stati = size(A_long, 1);
 
-% Usiamo solo 2 ingressi: Thrust (1) ed Elevator (2)
-ingressi_2x2 = [1, 2];
-B_2x2 = B_long(:, ingressi_2x2);
+% Selezioniamo 2 ingressi (Thrust, Elevator) e 2 uscite (V_t, q)
+ingressi_2x2 = [1, 2]; 
+uscite_2x2 = [1, 3];   
 
-% Usiamo solo 2 uscite: Vt (1) e alpha (2)
-uscite_2x2 = [1, 2];
+B_2x2 = B_long(:, ingressi_2x2);
 C_2x2 = C_long(uscite_2x2, :);
 D_2x2 = D_long(uscite_2x2, ingressi_2x2);
 
-% Modello in Spazio di Stato 2x2
+% Creazione Sottosistema
 sys_2x2 = ss(A_long, B_2x2, C_2x2, D_2x2);
 
-% 2. CALCOLO DEGLI ZERI INVARIANTI
+% Calcolo Zeri Invarianti
 Zeri_2x2 = tzero(sys_2x2);
-disp('Zeri Invarianti del sistema 2x2 (lambda):');
+disp('Zeri Invarianti calcolati per il 2x2:');
 disp(Zeri_2x2);
 
-if isempty(Zeri_2x2)
-    error('Ancora nessun zero. Prova a usare un canale SISO (es. solo Elevator su alpha).');
-end
-
-% Selezioniamo il primo zero trovato (può essere reale o complesso)
-lambda = Zeri_2x2(1); 
-fprintf('\nValutazione per lo zero lambda = %f + %fi\n', real(lambda), imag(lambda));
-
-% 3. MATRICE DI ROSENBROCK E NULLSPACE
-P_lambda = [lambda * eye(n_stati) - A_long, -B_2x2; 
-            C_2x2,                           D_2x2];
+if ~isempty(Zeri_2x2)
+    % Prende il primo zero (che sarà lo zero di macchina ~ 1e-15)
+    lambda = Zeri_2x2(1); 
+    
+    % Matrice di Rosenbrock
+    P_lambda = [lambda * eye(n_stati) - A_long, -B_2x2; 
+                C_2x2,                           D_2x2];
+    
+    % Nullspace per trovare direzioni bloccanti
+    N = null(P_lambda); 
+    
+    if ~isempty(N)
+        % Estrazione direzioni (parte reale per sicurezza contro rumore numerico)
+        x0 = real(N(1:n_stati, 1));
+        u0 = real(N(n_stati+1:end, 1));
         
-N = null(P_lambda); 
-
-% Estraiamo le direzioni (N ha n_stati righe per x0, e 2 righe per u0)
-x0 = N(1:n_stati, 1);
-u0 = N(n_stati+1:end, 1);
-
-disp('Vettore direzione iniziale dello stato (x0):'); disp(x0);
-disp('Vettore direzione ingresso bloccante (u0):'); disp(u0);
-
-% =========================================================================
-% 4. SIMULAZIONE DINAMICA DELLA PROPRIETÀ BLOCCANTE
-% =========================================================================
-disp('Avvio simulazione dinamica...');
-t = 0:0.01:10; 
-
-% Generazione dell'ingresso bloccante: u(t) = u0 * e^(lambda * t)
-% Nota: Se lambda è complesso, la simulazione richiederebbe ingressi complessi 
-% (impossibili fisicamente). MATLAB prenderà la parte reale per la simulazione.
-u_t = real(u0 * exp(lambda * t))'; 
-x0_sim = real(x0);
-
-[y_sim, t_sim, x_sim] = lsim(sys_2x2, u_t, t, x0_sim);
-
-% 5. GRAFICI
-figure('Name', 'Proprietà Bloccante 2x2 - F-16', 'Color', 'w');
-
-subplot(2,1,1);
-plot(t, u_t, 'LineWidth', 1.5);
-title(sprintf('Ingressi Bloccanti ($\\lambda$ = %.2f + %.2fi)', real(lambda), imag(lambda)), 'Interpreter', 'latex', 'FontSize', 12);
-xlabel('Tempo [s]'); ylabel('Comandi');
-legend('Thrust', 'Elevator', 'Location', 'best'); grid on;
-
-subplot(2,1,2);
-plot(t, y_sim, 'LineWidth', 1.5);
-title('Uscite $V_t$ e $\\alpha$ (Devono essere nulle/piatte)', 'Interpreter', 'latex', 'FontSize', 12);
-xlabel('Tempo [s]'); ylabel('Ampiezza Uscite');
-ylim([-0.05 0.05]); 
-legend('V_t', '\alpha', 'Location', 'best'); grid on;
+        % Simulazione
+        t = 0:0.01:10; 
+        u_t = (u0 * exp(real(lambda) * t))'; 
+        
+        [y_sim, t_sim, x_sim] = lsim(sys_2x2, u_t, t, x0);
+        
+        % ==========================================
+        % GRAFICO FORMATTATO PER IL REPORT
+        % ==========================================
+        fig = figure('Name', 'Proprieta_Bloccante_2x2', 'Color', 'w', 'Position', [100, 100, 700, 500]);
+        
+        % Subplot Ingressi
+        subplot(2,1,1);
+        plot(t, u_t, 'LineWidth', 2);
+        title('Ingressi Bloccanti (Condizione di Trim)', 'FontSize', 12, 'FontWeight', 'bold');
+        ylabel('Ampiezza Comando');
+        legend('Spinta (Thrust)', 'Equilibratore (Elevator)', 'Location', 'best');
+        grid on;
+        
+        % Subplot Uscite
+        subplot(2,1,2);
+        plot(t, y_sim, 'LineWidth', 2);
+        title('Risposta del Sottosistema (Uscite Mascherate)', 'FontSize', 12, 'FontWeight', 'bold');
+        xlabel('Tempo [s]');
+        ylabel('Variazione Uscita');
+        ylim([-0.05 0.05]); % Limiti stretti per evidenziare che è esattamente zero
+        legend('$V_t$', '$q$', 'Location', 'best', 'Interpreter', 'latex');
+        grid on;
+        
+        disp('Grafico generato. Salvalo per il report!');
+    else
+        disp('Errore: Nullspace vuoto.');
+    end
+end
