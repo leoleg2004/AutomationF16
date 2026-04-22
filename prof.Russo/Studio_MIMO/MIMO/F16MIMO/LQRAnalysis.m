@@ -9,9 +9,6 @@ nx = size(A_long, 1);
 nu_long = size(B_long, 2);
 
 %% 2. SINTESI DEL CONTROLLORE LQR
-
-
-% --- LA MODIFICA CHIAVE: ESTRAZIONE DI B_ctrl ---
 % Prendiamo tutte le righe (:), ma solo le prime 3 colonne (i veri attuatori)
 % Lasciamo fuori l'eventuale colonna del vento.
 B_ctrl = B_long(:, 1:3); 
@@ -27,8 +24,8 @@ disp('--- Variabili LQR calcolate ---');
 disp('Matrice di Riccati P calcolata e pronta per il costo terminale.');
 
 % Pesi logica pura (Aggressivo)
-Q = 10 * eye(nx);
-R = 5 * eye(nu);
+Q = 1 * eye(nx);
+R = 1 * eye(nu);
 R_long= 1*eye(nu_long);
 % Calcolo del guadagno ottimo K usando SOLO B_ctrl
 [K, P, E] = lqr(A_long, B_ctrl, Q, R);
