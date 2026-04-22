@@ -28,11 +28,11 @@ disp('Matrice di Riccati P calcolata e pronta per il costo terminale.');
 
 % Pesi logica pura (Aggressivo)
 Q = 10 * eye(nx);
-R = 1 * eye(nu);
+R = 5 * eye(nu);
 R_long= 1*eye(nu_long);
 % Calcolo del guadagno ottimo K usando SOLO B_ctrl
 [K, P, E] = lqr(A_long, B_ctrl, Q, R);
-[K_long, P_long, E_long] = lqr(A_long, B_long, Q, R_long);
+
 
 disp('--- Variabili LQR calcolate ---');
 disp('Guadagno K:'); disp(K);
@@ -50,7 +50,7 @@ Ts = 0.05;
 t = 0:Ts:5;
 
 % Condizione iniziale estrema (Looping/Candela)
-x0 = [1.5; 1; 10; 5]; % theta, q, U, W
+x0 = [1.5; 1; 10; 50]; % theta, q, U, W
 
 % Simulazione della risposta libera (initial) del sistema
 [y_sim, t_sim, x_sim] = initial(sys_cl, x0, t);
@@ -95,7 +95,8 @@ grid on;
 
 % 1. Creazione del nuovo sistema "controllato" (ciclo chiuso)
 % Sostituiamo la matrice A originale con la nuova dinamica A_cl
-sys_cl = ss(A_cl, B_long, C_long, D_long);
+sys_cl = ss(A_cl, B_ctrl, C_long, D_ctrl);%sistema in close loop con dinmaica del 
+%vento tolta sia dalla matrice B che D
 
 % 2. Generazione della Mappa Poli-Zeri
 figure('Name', 'Mappa Poli-Zeri a Ciclo Chiuso (LQR)', 'Position', [200, 200, 600, 500]);
