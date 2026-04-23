@@ -19,9 +19,12 @@ T_in_sys = feedback(L_in_sys, I_mat); % T = L * inv(I + L)
 w = logspace(-3, 3, 500); % Frequenze da 0.001 a 1000 rad/s
 
 % Estrazione matriciale in dB
-[sv_L, ~] = sigma(L_in_sys, w); sv_L_dB = 20*log10(sv_L);
-[sv_S, ~] = sigma(S_in_sys, w); sv_S_dB = 20*log10(sv_S);
-[sv_T, ~] = sigma(T_in_sys, w); sv_T_dB = 20*log10(sv_T);
+[sv_L, ~] = sigma(L_in_sys, w);
+sv_L_dB = 20*log10(sv_L);
+[sv_S, ~] = sigma(S_in_sys, w);
+sv_S_dB = 20*log10(sv_S);
+[sv_T, ~] = sigma(T_in_sys, w); 
+sv_T_dB = 20*log10(sv_T);
 
 % --- GRAFICO 1: ANELLO APERTO L(s) ---
 figure('Name', 'LQR: Anello Aperto L(s)', 'Color', 'w', 'Position', [100, 100, 600, 450]);
@@ -29,7 +32,7 @@ semilogx(w, sv_L_dB(1,:), 'b', 'LineWidth', 2.5); hold on;
 semilogx(w, sv_L_dB(end,:), 'k', 'LineWidth', 2.5);          
 semilogx(w, zeros(size(w)), 'r--', 'LineWidth', 1.5);        
 hold off; grid on;
-title('Anello Aperto LQR $L(s)$ all''ingresso (Inviluppo Max/Min)', 'Interpreter', 'latex', 'FontSize', 14);
+title('Anello Aperto LQR L(s) all''ingresso (Inviluppo Max/Min)', 'Interpreter', 'latex', 'FontSize', 14);
 ylabel('Valori Singolari (dB)'); xlabel('Frequenza (rad/s)');
 legend('\sigma_{Max} (Direzione Forte)', '\sigma_{Min} (Direzione Debole)', '0 dB (Crossover)', 'Location', 'best');
 
@@ -39,7 +42,7 @@ semilogx(w, sv_S_dB(1,:), 'b', 'LineWidth', 2.5); hold on;
 semilogx(w, sv_S_dB(end,:), 'k', 'LineWidth', 2.5);          
 semilogx(w, zeros(size(w)), 'r--', 'LineWidth', 2);          
 hold off; grid on;
-title('Sensitività LQR $S(s)$ (Dimostrazione Asintoto e Robustezza)', 'Interpreter', 'latex', 'FontSize', 14);
+title('Sensitività LQR S(s) (Dimostrazione Asintoto e Robustezza)', 'Interpreter', 'latex', 'FontSize', 14);
 ylabel('Valori Singolari (dB)'); xlabel('Frequenza (rad/s)');
 legend('\sigma_{Max}', '\sigma_{Min}', 'Limite LQR e Asintoto (0 dB)', 'Location', 'best');
 
