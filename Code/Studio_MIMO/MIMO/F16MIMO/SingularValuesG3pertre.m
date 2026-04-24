@@ -10,7 +10,15 @@ disp('--- Analisi Valori Singolari: G(s) ---');
 
 % Conversione in Decibel (dB)
 sv_dB = 20*log10(sv);
+% 1. Calcolo del guadagno statico valutando la tua matrice per s = 0
+G_statico = dcgain(G);
 
+% 2. Calcolo della RGA utilizzando il prodotto di Schur e l'inversa trasposta
+RGA = G_statico .* inv(G_statico).';
+
+% 3. Stampa il risultato
+disp('--- Relative Gain Array (RGA) ---');
+disp(RGA);
 % 1. GRAFICO DEL VALORE MASSIMO E MINIMO
 figure('Name', 'Valori Singolari (Max e Min)', 'Color', 'w', 'Position', [100, 100, 700, 500]);
 
