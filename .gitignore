@@ -1,0 +1,18 @@
+# --- Database e Sicurezza ---
+# NON caricare mai file che contengono password!
+connessione.php
+
+# --- File di Sistema ed Editor ---
+# Cartella di configurazione di Visual Studio Code
+.vscode/
+# File di configurazione di Eclipse (se lo hai usato)
+.project
+.settings/
+.buildpath
+# File temporanei di Windows/Mac
+Thumbs.db
+.DS_Store
+
+# --- Log e temporanei ---
+*.log
+tmp/
