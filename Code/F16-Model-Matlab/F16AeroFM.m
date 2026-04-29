@@ -17,7 +17,7 @@ if isempty(persistent_flag)
     r2d = 180/pi;
 end
 
-Vt    = inp(1);
+Vt    = inp(Vt0);
 alpha = inp(2)*r2d; % Convert to degrees for aero table look up.
 beta  = inp(3)*r2d; % Convert to degrees for aero table look up.
 om    = inp(4:6);

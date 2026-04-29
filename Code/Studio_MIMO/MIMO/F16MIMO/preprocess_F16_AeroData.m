@@ -1,4 +1,4 @@
-clc; clear all;
+
 
 d2r = pi/180;
 % Read independent variables

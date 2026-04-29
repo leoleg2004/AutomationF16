@@ -1,4 +1,4 @@
-clc; clear;
+
 
 conversion % loads conversion constants. see conversion.m for defintions.
 
@@ -26,5 +26,5 @@ u0 = [9000*lbf2N,0,0,0,0,0,0];
 % disp(xdot)
 
 Tend = 5;
-simout = sim('F16_2023a.mdl');
+simout = sim('F16_2022a.mdl');
 plot_trajectories(simout);
