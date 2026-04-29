@@ -8,6 +8,14 @@
 
 function FM = F16AeroFM(inp)
 
+% --- INIZIO AGGIUNTA PER CONSENTIRE IL TEST CON IL TASTO RUN ---
+% Se la funzione viene chiamata senza input (ad esempio premendo "Run" da MATLAB),
+% fornisce automaticamente un vettore di 11 valori fittizi per evitare l'errore su Vt.
+if nargin < 1 || isempty(inp)
+    inp = [89.5080,0 , 0, 0, 0, 0, 300, 0, 0, 0, 0]; 
+end
+% --- FINE AGGIUNTA ---
+
 persistent Param F16Aero r2d persistent_flag
 if isempty(persistent_flag)
     persistent_flag = 1;

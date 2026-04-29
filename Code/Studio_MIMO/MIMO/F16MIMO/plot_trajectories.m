@@ -11,8 +11,26 @@ function plot_trajectories(simOut)
 r2d = 180/pi;
 set(0, 'DefaultLineLineWidth', 1);
 
-yout = horzcat(simOut.yout.signals.values);
+% --- GESTIONE COMPATIBILITA' VERSIONI MATLAB ---
+if isa(simOut.yout, 'Simulink.SimulationData.Dataset')
+    % Formato Dataset (default nelle nuove versioni di MATLAB)
+    yout_temp = [];
+    for i = 1:simOut.yout.numElements
+        yout_temp = horzcat(yout_temp, simOut.yout{i}.Values.Data);
+    end
+    yout = yout_temp;
+elseif isstruct(simOut.yout) && isfield(simOut.yout, 'signals')
+    % Formato Structure with time (vecchie versioni)
+    yout = horzcat(simOut.yout.signals.values);
+elseif isnumeric(simOut.yout)
+    % Formato Array
+    yout = simOut.yout;
+else
+    % Fallback
+    yout = simOut.yout;
+end
 tout = simOut.tout;
+% -----------------------------------------------
 
 figure(1); clf;
 % Plot position in inertial
