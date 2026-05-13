@@ -143,8 +143,8 @@ M = Cm_tot*qbar*Param.S*Param.cbar;
 N = Cn_tot*qbar*Param.S*Param.b;
 
 
-% Fb = [Fx,Fy,Fz];
-% Mb = [L,M,N];
+Fb = [Fx,Fy,Fz];
+Mb = [L,M,N];
 
 FM = [Fx,Fy,Fz,L,M,N];
 
