@@ -6,10 +6,10 @@
 %% 1. Definizione del Sistema (TEMPO CONTINUO)
 nx = 4; % Stati: [theta,q,U,W]'
 nu = 3; % Ingressi: [T, dele, dlef]'
-Ts = 0.1; % Tempo di campionamento in secondi
+Ts = 0.05; % Tempo di campionamento in secondi
 
 
-% --- 1B. CONVERSIONE IN TEMPO DISCRETO ---
+% ---  CONVERSIONE IN TEMPO DISCRETO ---
 disp('Conversione del modello da Continuo a Discreto...');
 sys_c = ss(A_long, B_ctrl, eye(nx), zeros(nx, nu));
 sys_d = c2d(sys_c, Ts, 'zoh'); % Zero-Order Hold
@@ -58,30 +58,40 @@ end
 figure('Name', 'Control Invariant Set 3D', 'Color', 'w', 'Position', [50, 50, 900, 700]);
 hold on; grid on; view(3); 
 title('Poliedro $\mathcal{X}_f$ in 3D (Fetta $\theta = 0$)', 'Interpreter', 'latex', 'FontSize', 14);
-xlabel('\Delta V [ft/s]'); ylabel('\Delta \alpha [rad]'); zlabel('q [rad/s]');
 
-[X1, X2, X3] = meshgrid(linspace(-40, 40, 50), ...
-                        linspace(-deg2rad(10), deg2rad(10), 50), ...
-                        linspace(-deg2rad(60), deg2rad(60), 50));
-X1_f = X1(:); X2_f = X2(:); X3_f = X3(:); X4_f = zeros(size(X1_f)); 
-Validi = true(size(X1_f));
+% Assi aggiornati al tuo vettore di stato: [theta, q, U, W]
+xlabel('u [ft/s]'); ylabel('w [ft/s]'); zlabel('q [rad/s]');
+
+% Griglia coerente con i tuoi stati (U, W, q)
+[X_U, X_W, X_q] = meshgrid(linspace(-50, 50, 40), ... % Range per u (Stato 3)
+                           linspace(-50, 50, 40), ... % Range per w (Stato 4)
+                           linspace(-deg2rad(40), deg2rad(40), 40)); % Range per q (Stato 2)
+
+X_U_f = X_U(:); X_W_f = X_W(:); X_q_f = X_q(:); 
+
+% Imposta la fetta in modo che combaci con la theta iniziale (15 gradi)
+theta_slice = 0; 
+X_theta_f = theta_slice * ones(size(X_U_f)); % Fetta corrispondente alla partenza
+
+Validi = true(size(X_U_f));
 for j = 1:size(G_inf, 1)
-    Valore = G_inf(j,1)*X1_f + G_inf(j,2)*X2_f + G_inf(j,3)*X3_f + G_inf(j,4)*X4_f;
+    % Ordine corretto di moltiplicazione: G_inf * [theta; q; u; w]
+    Valore = G_inf(j,1)*X_theta_f + G_inf(j,2)*X_q_f + G_inf(j,3)*X_U_f + G_inf(j,4)*X_W_f;
     Validi = Validi & (Valore <= g_inf(j));
 end
-PX = X1_f(Validi); PY = X2_f(Validi); PZ = X3_f(Validi);
+
+PX = X_U_f(Validi); PY = X_W_f(Validi); PZ = X_q_f(Validi);
+
 if length(PX) > 4
     K_hull = convhull(PX, PY, PZ);
     trisurf(K_hull, PX, PY, PZ, 'FaceColor', 'c', 'FaceAlpha', 0.15, 'EdgeColor', 'b', 'EdgeAlpha', 0.1);
 else
-    disp('ATTENZIONE: Griglia 3D troppo stretta o set vuoto.');
+    disp('ATTENZIONE: Nessun punto valido trovato per il plot. Verifica i limiti di meshgrid.');
 end
-
 %% 5. Setup Problema MPC 
-N = 10; % Orizzonte predittivo sufficientemente lungo (4 secondi)
+N = 30; % Orizzonte predittivo sufficientemente lungo (4 secondi)
 n_vars = N*nu + N*nx; 
 
-% ---> RIPRISTINATA STRUTTURA CHIARA CON R_blk E Q_blk <---
 R_blk = kron(eye(N), R);
 Q_blk = blkdiag(kron(eye(N-1), Q), P);
 H = 2 * blkdiag(R_blk, Q_blk);         
@@ -116,11 +126,11 @@ b_ineq_stat = [b_ineq_stat; g_inf];
 disp('--- Avvio Ottimizzazione e Simulazione MPC ---');
 
 % Ordine: [theta; q; u; w]
-x_iniziale = [deg2rad(15);  % theta: 5 gradi convertiti in rad
-              deg2rad(12);           % q: velocità angolare nulla
+x_iniziale = [deg2rad(25);  % theta: 5 gradi convertiti in rad
+              deg2rad(20);           % q: velocità angolare nulla
               20;          % u: +10 ft/s di velocità forward
-              40];          % w: velocità verticale nulla
-t_sim = 20; 
+              20];          % w: velocità verticale nulla
+t_sim = 50; 
 storia_x = zeros(nx, t_sim+1); storia_x(:,1) = x_iniziale;
 storia_u = zeros(nu, t_sim);
 u_previous = [0;0;0]; 
@@ -154,9 +164,10 @@ for t = 1:t_sim
         for k = 1:N
             X_pred(:, k+1) = z_opt(N*nu + (k-1)*nx + 1 : N*nu + k*nx);
         end
-        plot3(X_pred(1,:), X_pred(2,:), X_pred(3,:), '-rs', 'LineWidth', 2, 'MarkerFaceColor', 'r');
-        plot3(x_iniziale(1), x_iniziale(2), x_iniziale(3), 'k*', 'MarkerSize', 10, 'LineWidth', 2);
-        text(x_iniziale(1), x_iniziale(2), x_iniziale(3)+0.1, ' Partenza', 'FontWeight', 'bold');
+        % Plot corretto per gli assi: X=u(3), Y=w(4), Z=q(2)
+        plot3(X_pred(3,:), X_pred(4,:), X_pred(2,:), '-rs', 'LineWidth', 2, 'MarkerFaceColor', 'r');
+        plot3(x_iniziale(3), x_iniziale(4), x_iniziale(2), 'k*', 'MarkerSize', 10, 'LineWidth', 2);
+        text(x_iniziale(3), x_iniziale(4), x_iniziale(2)+0.05, ' Partenza', 'FontWeight', 'bold');
     end
     
     u_applicata = z_opt(1:nu);
@@ -167,13 +178,17 @@ for t = 1:t_sim
 end
 disp('Ottimizzazione Riuscita! Il modello è matematicamente solido.');
 
+
 %% 7. Grafici 
 figure('Name', 'Risultati MPC: Stati del Velivolo', 'Color', 'w', 'Position', [100 100 900 600]);
-subplot(2,2,1); plot(0:t_sim, storia_x(1,:), '-b', 'LineWidth', 1.5); title('\Delta Velocità [ft/s]'); grid on; 
-subplot(2,2,2); plot(0:t_sim, storia_x(2,:), '-r', 'LineWidth', 1.5); title('\Delta Angolo d''Attacco [rad]'); grid on; 
-subplot(2,2,3); plot(0:t_sim, storia_x(3,:), '-m', 'LineWidth', 1.5); title('Pitch Rate [rad/s]'); grid on; 
-subplot(2,2,4); plot(0:t_sim, storia_x(4,:), '-c', 'LineWidth', 1.5); title('\Delta Pitch Angle [rad]'); grid on;
-
+% storia_x(1) -> theta
+subplot(2,2,1); plot(0:t_sim, storia_x(1,:), '-b', 'LineWidth', 1.5); title('\Delta Pitch Angle (\theta) [rad]'); grid on; 
+% storia_x(2) -> q
+subplot(2,2,2); plot(0:t_sim, storia_x(2,:), '-r', 'LineWidth', 1.5); title('Pitch Rate (q) [rad/s]'); grid on; 
+% storia_x(3) -> u
+subplot(2,2,3); plot(0:t_sim, storia_x(3,:), '-m', 'LineWidth', 1.5); title('\Delta Velocità Forward (u) [ft/s]'); grid on; 
+% storia_x(4) -> w
+subplot(2,2,4); plot(0:t_sim, storia_x(4,:), '-c', 'LineWidth', 1.5); title('\Delta Velocità Verticale (w) [ft/s]'); grid on;
 figure('Name', 'Risultati MPC: Sforzo degli Attuatori', 'Color', 'w', 'Position', [150 150 700 800]);
 subplot(3,1,1); stairs(0:t_sim-1, storia_u(1,:), '-g', 'LineWidth', 1.5); hold on;
 yline(U_max(1), 'k--'); yline(U_min(1), 'k--'); title('\Delta Spinta [lbf]'); grid on; ylim([U_min(1)-2000, U_max(1)+2000]);
