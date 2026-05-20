@@ -89,7 +89,7 @@ else
     disp('ATTENZIONE: Nessun punto valido trovato per il plot. Verifica i limiti di meshgrid.');
 end
 %% 5. Setup Problema MPC 
-N = 30; % Orizzonte predittivo sufficientemente lungo (4 secondi)
+N = 30; % Orizzonte predittivo sufficientemente lungo
 n_vars = N*nu + N*nx; 
 
 R_blk = kron(eye(N), R);
@@ -130,7 +130,7 @@ x_iniziale = [deg2rad(25);  % theta: 5 gradi convertiti in rad
               deg2rad(20);           % q: velocità angolare nulla
               20;          % u: +10 ft/s di velocità forward
               20];          % w: velocità verticale nulla
-t_sim = 50; 
+t_sim = 100; 
 storia_x = zeros(nx, t_sim+1); storia_x(:,1) = x_iniziale;
 storia_u = zeros(nu, t_sim);
 u_previous = [0;0;0]; 
