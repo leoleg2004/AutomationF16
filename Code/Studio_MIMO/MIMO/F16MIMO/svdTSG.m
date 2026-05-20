@@ -1,6 +1,11 @@
 % =========================================================================
 % SCOMPOSIZIONE AI VALORI SINGOLARI (SVD) TOTALE IN ANELLO APERTO 
 % =========================================================================
+% Tesi Triennale - Moto Longitudinale F-16
+% Ing. Leggeri Leonardo
+% =========================================================================
+
+% =========================================================================
 disp('--- SVD TOTALE della Matrice dei Guadagni Statici (Impianto Fisico) ---');
 
 % 1. Calcolo della matrice G totale (6 uscite x 5 ingressi)

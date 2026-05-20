@@ -1,3 +1,7 @@
+% =========================================================================
+% Tesi Triennale - LQR Longitudinale F-16
+% Ing. Leggeri Leonardo
+% =========================================================================
 close all
 clc
 warning off all
@@ -23,8 +27,8 @@ disp('--- Variabili LQR calcolate ---');
 disp('Matrice di Riccati P calcolata e pronta per il costo terminale.');
 
 % Pesi logica pura (Aggressivo)
-Q = 1* eye(nx);
-R = 100* eye(nu);
+Q = 100* eye(nx);
+R = 10* eye(nu);
 R_long= 1*eye(nu_long);
 
 % Calcolo del guadagno ottimo K usando SOLO B_ctrl
@@ -131,4 +135,89 @@ grid on;
 title('Verifica Stabilità LQR: Posizione dei Nuovi Poli');
 xlabel('Asse Reale (Velocità di convergenza/divergenza)');
 ylabel('Asse Immaginario (Frequenza di oscillazione)');
-xline(0, 'k--', 'LineWidth', 1.5);
+
+%% 5. RITRATTO DI FASE E FUNZIONE DI LYAPUNOV (LQR)
+% Per visualizzare la stabilità, isoliamo la dinamica a corto periodo 
+% variando W (velocità verticale) e q (pitch rate) e fissando U=0, theta=0.
+
+% 5.1 Definizione della griglia spaziale
+w_range = linspace(-25, 25, 50);   % ft/s
+q_range_rad = linspace(-1.5, 1.5, 50); % rad/s
+[W_grid, Q_rad] = meshgrid(w_range, q_range_rad);
+Q_deg = Q_rad * rad2deg; % Conversione per asse grafico
+
+% 5.2 Calcolo della funzione di Lyapunov V(x) = x^T * P * x sulla griglia
+V_surf = zeros(size(W_grid));
+for i = 1:size(W_grid, 1)
+    for j = 1:size(W_grid, 2)
+        % Fissiamo theta=0 e U=0
+        stato_surf = [0; Q_rad(i,j); 0; W_grid(i,j)];
+        V_surf(i,j) = stato_surf' * P * stato_surf;
+    end
+end
+
+% 5.3 Dinamica a ciclo chiuso per ode45
+dxdt = @(t, x) A_cl * x;
+
+% 5.4 Matrice di condizioni iniziali multiple [theta; q; U; W]
+% Vogliamo mostrare la convergenza da diverse "direzioni"
+x0_mult = [
+    0,   0,    0,   0,    0,   0,    0,   0;      % theta
+    1.2, -1.2, 0.5, -0.5, 0.8, -0.8, 0.3, -0.3;   % q (rad/s)
+    0,   0,    0,   0,    0,   0,    0,   0;      % U
+    20,  -20,  15,  -15, -10,  10,   22,  -22     % W (ft/s)
+];
+
+% -------------------------------------------------------------------------
+% FIGURA 4: RITRATTO DI FASE 2D CON CURVE DI LIVELLO
+% -------------------------------------------------------------------------
+figure('Name', 'Ritratto di Fase 2D LQR', 'Color', 'w', 'Position', [250, 250, 700, 500]);
+hold on; grid on;
+
+% Disegno le curve di livello di V(x)
+contour(W_grid, Q_deg, V_surf, 40, 'LineWidth', 1);
+colormap jet;
+colorbar;
+
+% Simulo e plotto le traiettorie
+for i = 1:size(x0_mult, 2)
+    [t_ode, x_ode] = ode45(dxdt, [0 5], x0_mult(:, i));
+    
+    % Corretto: moltiplico per la variabile rad2deg invece di usare le parentesi
+    plot(x_ode(:,4), x_ode(:,2) * rad2deg, 'k', 'LineWidth', 1.5);
+    % Segno il punto di partenza
+    plot(x_ode(1,4), x_ode(1,2) * rad2deg, 'ro', 'MarkerFaceColor', 'r', 'MarkerSize', 6);
+end
+
+title('Ritratto di Fase e Curve di Livello $V(x)$ (LQR)', 'Interpreter', 'latex');
+xlabel('$W$ (Velocità Verticale) [ft/s]', 'Interpreter', 'latex');
+ylabel('$q$ (Pitch Rate) [deg/s]', 'Interpreter', 'latex');
+axis tight;
+
+% -------------------------------------------------------------------------
+% FIGURA 5: FUNZIONE DI LYAPUNOV 3D CON TRAIETTORIE
+% -------------------------------------------------------------------------
+figure('Name', 'Funzione di Lyapunov 3D - LQR', 'Color', 'w', 'Position', [300, 300, 800, 600]);
+hold on; grid on;
+
+% Superficie della funzione costo (bacinella)
+surf(W_grid, Q_deg, V_surf, 'EdgeColor', 'none', 'FaceAlpha', 0.6);
+colormap jet;
+
+% Proiezione delle traiettorie sulla superficie 3D
+for i = 1:size(x0_mult, 2)
+    [t_ode, x_ode] = ode45(dxdt, [0 5], x0_mult(:, i));
+    
+    % V_traiettoria = (x_ode * P) .* x_ode sommato per righe
+    V_traiettoria = sum((x_ode * P) .* x_ode, 2); 
+    
+    % Corretto: moltiplico per la variabile rad2deg invece di usare le parentesi
+    plot3(x_ode(:,4), x_ode(:,2) * rad2deg, V_traiettoria, 'k-', 'LineWidth', 2);
+    plot3(x_ode(1,4), x_ode(1,2) * rad2deg, V_traiettoria(1), 'ro', 'MarkerFaceColor', 'r', 'MarkerSize', 6);
+end
+
+title('Funzione di Lyapunov $V(x) = x^T P x$ a Ciclo Chiuso', 'Interpreter', 'latex');
+xlabel('$W$ [ft/s]', 'Interpreter', 'latex');
+ylabel('$q$ [deg/s]', 'Interpreter', 'latex');
+zlabel('$V(x)$', 'Interpreter', 'latex');
+view(-35, 35);

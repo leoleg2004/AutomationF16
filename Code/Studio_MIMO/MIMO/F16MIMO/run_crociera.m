@@ -1,6 +1,10 @@
 % Script per simulare il volo di crociera del modello F-16
 % Questo script esegue il trim dell'aereo e poi utilizza
 % le condizioni linearizzate per inizializzare la simulazione.
+% =========================================================================
+% Tesi Triennale - Grafici volo di crociera con simulink
+% Ing. Leggeri Leonardo
+% =========================================================================
 
 
 conversion % Carica le costanti di conversione

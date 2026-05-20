@@ -1,6 +1,7 @@
 % =========================================================================
-% Tesi Triennale - Set Controllabili MPC (Animazione Algoritmo Slide 44)
+% Tesi Triennale - Set Controllabili MPC 
 % Dimostrazione: Inclusione vs Non-Inclusione con IDENTICA Convergenza
+% Ing: Leggeri Leonardo
 % =========================================================================
 clear; clc; close all;
 set(0,'DefaultLineLineWidth',1.5);

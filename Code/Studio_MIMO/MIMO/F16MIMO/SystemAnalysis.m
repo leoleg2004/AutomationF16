@@ -1,6 +1,13 @@
  % =========================================================================
 % MINIMIZZAZIONE DEL SISTEMA (Raggiungibilità e Osservabilità)
 % =========================================================================
+% Tesi Triennale - Proprietà struturali per controllo longitudinale dell'
+% F-16
+% Simulazione con Conversione Continuo-Discreto (c2d) e Radianti
+% Ing. Leggeri Leonardo
+% =========================================================================
+
+% =========================================================================
 disp('--- Generazione Modello State-Space (LTI) Originale ---');
 sys_long = ss(A_long, B_long, C_long, D_long);
 sys_long.StateName = {'theta', 'q', 'U', 'W'};

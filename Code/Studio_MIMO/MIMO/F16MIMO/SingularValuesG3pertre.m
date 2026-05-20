@@ -6,12 +6,12 @@ disp('--- Analisi Valori Singolari: G(s) ---');
 % MATLAB estrae analiticamente l'amplificazione massima e minima
 % per tutti i vettori di ingresso tali che ||u|| = 1.
 % sv conterrà 3 righe (essendo un sistema 3x3)
-[sv, w] = sigma(G); 
+[sv, w] = sigma(G_nuova); 
 
 % Conversione in Decibel (dB)
 sv_dB = 20*log10(sv);
 % 1. Calcolo del guadagno statico valutando la tua matrice per s = 0
-G_statico = dcgain(G);
+G_statico = dcgain(G_nuova);
 
 % 2. Calcolo della RGA utilizzando il prodotto di Schur e l'inversa trasposta
 RGA = G_statico .* inv(G_statico).';

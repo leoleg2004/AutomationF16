@@ -1,5 +1,6 @@
 % =========================================================================
 % VALUTAZIONE ZERI E PROPRIETÀ BLOCCANTE (Sistema Completo 3x3)
+% Ing. Leggeri Leonardo
 % =========================================================================
 disp('--- Analisi Proprietà Bloccante su Sistema Completo 3x3 ---');
 

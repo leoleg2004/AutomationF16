@@ -1,6 +1,7 @@
 % =========================================================================
 % Ritratto di Fase F-16: MOTO DI CORTO PERIODO (Short Period)
 % Variabili isolate: w (ft/s) vs q (deg/s)
+% Ing: Leggeri Leonardo
 % =========================================================================
 
 
@@ -22,9 +23,9 @@ A_cl = A_long - B_ctrl * K;
 dxdt = @(t,x) A_cl * x;
 
 % Condizioni iniziali [theta=0, q_alta, u=0, w_alta]
-x0 = [0,  0.5, 0,  30;   
+x0 = [0.785,  0.3, 10,  5;   
       0, -0.6, 0, -40;   
-      0,  0.8, 0, -20]';  
+      0.2,  0.4, 20, -20]';  
 
 figure('Name', 'Corto Periodo: w vs q', 'Color', 'w', 'Position', [50 100 800 600]);
 hold on; grid on;

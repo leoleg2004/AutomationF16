@@ -1,6 +1,7 @@
 % =========================================================================
 % Ritratto di Fase F-16: MOTO FUGOIDE (Phugoid)
 % Variabili isolate: theta (deg) vs u (ft/s)
+% Ing: Leggeri Leonardo
 % =========================================================================
 
 
@@ -112,3 +113,4 @@ xlabel('$w$ [ft/s]', 'Interpreter', 'latex')
 ylabel('$q$ [deg/s]', 'Interpreter', 'latex')
 zlabel('$V(x)$', 'Interpreter', 'latex')
 view(-45, 30);
+

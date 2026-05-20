@@ -1,6 +1,7 @@
 % =========================================================================
 % Tesi Triennale - MPC Longitudinale F-16
 % Simulazione con Conversione Continuo-Discreto (c2d) e Radianti
+% Ing. Leggeri Leonardo
 % =========================================================================
 
 %% 1. Definizione del Sistema (TEMPO CONTINUO)

@@ -1,6 +1,7 @@
 % =========================================================================
 % Ritratto di Fase F-16: MOTO DI CORTO PERIODO (Short Period)
 % Variabili isolate: w (ft/s) vs q (deg/s)
+% Ing. Leggeri Leonardo
 % =========================================================================
 
 
