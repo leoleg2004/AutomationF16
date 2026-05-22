@@ -27,8 +27,8 @@ disp('--- Variabili LQR calcolate ---');
 disp('Matrice di Riccati P calcolata e pronta per il costo terminale.');
 
 % Pesi logica pura (Aggressivo)
-Q = 100* eye(nx);
-R = 10* eye(nu);
+Q = 1* eye(nx);
+R = 100* eye(nu);
 R_long= 1*eye(nu_long);
 
 % Calcolo del guadagno ottimo K usando SOLO B_ctrl
@@ -47,10 +47,10 @@ sys_cl = ss(A_cl, zeros(nx, nu), eye(nx), zeros(nx, nu));
 
 % Vettore tempo per la simulazione (es. 5 secondi con passo 0.05s, per avere 100 samples)
 Ts = 0.05;
-t = 0:Ts:30;
+t = 0:Ts:10;
 
 % Condizione iniziale estrema (Looping/Candela)
-x0 = [0.785; 0.3; 10; 5]; % theta, q, U, W
+x0 = [0; 1.2; 0; 20]; % theta, q, U, W
 
 % Simulazione della risposta libera (initial) del sistema
 [y_sim, t_sim, x_sim] = initial(sys_cl, x0, t);
@@ -190,8 +190,8 @@ for i = 1:size(x0_mult, 2)
 end
 
 title('Ritratto di Fase e Curve di Livello $V(x)$ (LQR)', 'Interpreter', 'latex');
-xlabel('$W$ (Velocità Verticale) [ft/s]', 'Interpreter', 'latex');
-ylabel('$q$ (Pitch Rate) [deg/s]', 'Interpreter', 'latex');
+xlabel('W (Velocità Verticale) [ft/s]', 'Interpreter', 'latex');
+ylabel('q (Pitch Rate) [deg/s]', 'Interpreter', 'latex');
 axis tight;
 
 % -------------------------------------------------------------------------

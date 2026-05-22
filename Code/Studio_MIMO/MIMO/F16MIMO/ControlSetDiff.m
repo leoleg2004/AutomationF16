@@ -8,7 +8,7 @@ set(0,'DefaultLineLineWidth',1.5);
 set(0,'DefaultAxesFontSize',14);
 set(0,'DefaulttextInterpreter','latex');
 
-%% 1. Definizione Sistema Lineare 2D (Slide 21)
+%% 1. Definizione Sistema Lineare 2D 
 A = [1, 1; 
      0, 1];
 B = [0.5; 
