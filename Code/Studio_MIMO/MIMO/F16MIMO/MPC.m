@@ -4,7 +4,8 @@
 % Ing. Leggeri Leonardo
 % =========================================================================
 
-addpath(fullfile(pwd, 'funzioni_mpc'));
+% Inizializzazione Path
+startup_project();
 
 %% 1. Definizione del Sistema (TEMPO CONTINUO)
 nx = 4; % Stati: [theta,q,U,W]'
@@ -15,7 +16,13 @@ disp('Conversione del modello da Continuo a Discreto...');
 [A_long_ds, B_ctrl_ds] = discretizza_modello(A_long, B_ctrl, nx, nu, Ts);
 
 %% 2. Progetto LQR tramite funzione dedicata
-[K, P, Q, R, A_cl] = progetta_LQR(A_long_ds, B_ctrl_ds);
+% =========================================================================
+% NOTA SUI PESI Q e R:
+% Se vuoi modificare l'aggressività del controllore (pesi Q e R),
+% apri il file "funzioni_lqr/progetta_LQR_discreto.m" e modificali lì dentro!
+% =========================================================================
+disp('Progetto LQR discreto tramite funzione dedicata...');
+[K, P, Q, R, A_cl] = progetta_LQR_discreto(A_long_ds, B_ctrl_ds);
 
 %% 3. Vincoli Fisici (Ampiezza e Rateo) tramite funzione dedicata
 [U_min, U_max, dU_min, dU_max, X_min, X_max, Fx, fx, Fu, fu, Gx, gx] = imposta_vincoli(nx, nu, Ts);
@@ -28,7 +35,7 @@ disp('--- CALCOLO O_INF (Control Invariant Set) ---');
 plot_cis(G_inf, g_inf);
 
 %% 5. Setup Problema MPC 
-N = 30; % Orizzonte predittivo sufficientemente lungo
+N = 40; % Orizzonte predittivo sufficientemente lungo
 mpc_prob = setup_mpc(N, nx, nu, A_long_ds, B_ctrl_ds, Q, P, R, U_min, U_max, Gx, gx, G_inf, g_inf);
 
 %% 6. Simulazione MPC Completa 
@@ -37,7 +44,7 @@ disp('--- Avvio Ottimizzazione e Simulazione MPC ---');
 x_iniziale = [deg2rad(25);  % theta: 5 gradi convertiti in rad
               deg2rad(20);  % q: velocità angolare
               20;           % u: +20 ft/s di velocità forward
-              20];          % w: velocità verticale
+              80];          % w: velocità verticale
 t_sim = 100; 
 
 [storia_x, storia_u] = simula_mpc(mpc_prob, x_iniziale, t_sim, A_long_ds, B_ctrl_ds, dU_max);

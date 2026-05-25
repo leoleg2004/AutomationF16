@@ -6,7 +6,13 @@
 % Ing. Leggeri Leonardo
 % =========================================================================
 
+% Assicuriamoci che tutte le cartelle del progetto siano nel path di MATLAB!
+% Questo comando naviga nella cartella superiore rispetto a questo script
+% e lancia lo startup del progetto, garantendo che MATLAB trovi tutti i file.
+addpath(fullfile(fileparts(mfilename('fullpath')), '..'));
+startup_project();
 
+disp('Caricamento costanti di conversione...');
 conversion % Carica le costanti di conversione
 
 % 1. Caricamento dei parametri del sistema
@@ -38,7 +44,10 @@ u0 = [best_u(1), best_u(2), 0, 0, best_u(3), 0, 0];
 % 4. Avvio della simulazione Simulink
 Tend = 10; % Tempo di simulazione (modificabile)
 disp(['Avvio della simulazione (Tend = ', num2str(Tend), 's)...']);
-simout = sim('F16_2022a.mdl'); % Oppure usa 'F16_2023a.mdl' a seconda della tua versione
+
+% IMPORTANTE: Simulink carica i modelli tramite il Path di MATLAB. 
+% NON usare percorsi relativi, inserisci solo il nome del modello senza estensione.
+simout = sim('F16_2022a'); 
 
 % 5. Plot delle traiettorie
 disp('Generazione dei grafici delle traiettorie...');
