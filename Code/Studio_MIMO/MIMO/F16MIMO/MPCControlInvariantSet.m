@@ -41,24 +41,59 @@ X_min = [-deg2rad(45); -deg2rad(60); -100; -85];
 Gx = [eye(nx); -eye(nx)]; gx = [X_max; -X_min];
 Gu_x = [-K; K]; gu_x = [U_max; -U_min];
 G = [Gx; Gu_x]; g = [gx; gu_x];
-%% 4. Calcolo e Plot 3D Convergenza di O_inf
-G_inf = G; g_inf = g;
-max_iter = 100; tol = 1e-6;
-disp('--- CALCOLO O_INF ---');
-for i = 1:max_iter
-    G_next = G * (A_cl^i);
-    G_inf_new = [G_inf; G_next];
-    g_inf_new = [g_inf; g];
-    if norm(G_next, inf) < tol
-        fprintf('Convergenza O_inf raggiunta all''iterazione %d\n', i);
-        break;
-    end
-    G_inf = G_inf_new; g_inf = g_inf_new;
-end
 
+%% 4. Calcolo Control Invariant Set e Controllable Set con Polyhedron
+disp('--- CALCOLO O_INF CON POLYHEDRON (Control Invariant Set) ---');
+CIS_poly_prev = Polyhedron();
+CIS_poly_curr = Polyhedron(G, g);
+
+% Calcolo Invariant Set iterativo
+while CIS_poly_prev.isEmptySet || CIS_poly_prev ~= CIS_poly_curr
+    CIS_poly_prev = CIS_poly_curr;
+    
+    G_hat = [CIS_poly_prev.A * A_cl; G];
+    g_hat = [CIS_poly_prev.b; g];
+    
+    CIS_poly_curr = Polyhedron(G_hat, g_hat);
+end
+G_inf = CIS_poly_curr.A;
+g_inf = CIS_poly_curr.b;
+disp('Calcolo O_inf completato.');
+
+disp('--- CALCOLO N-STEP CONTROLLABLE SET CON POLYHEDRON ---');
+N = 30; % Orizzonte predittivo MPC
+
+H_ii_steps = G_inf;
+h_ii_steps = g_inf;
+
+Hu = [eye(nu); -eye(nu)]; 
+hu = [U_max; -U_min];
+
+for ii = 1:N
+    % Calcolo in R^(n+m) per le coppie (x,u)
+    A_k_1 = [H_ii_steps * A_long_ds, H_ii_steps * B_ctrl_ds;
+             zeros(size(Hu, 1), nx), Hu]; 
+    
+    B_k_1 = [h_ii_steps; hu];
+    
+    temp = Polyhedron(A_k_1, B_k_1); 
+
+    % Proiezione in R^(n) sullo stato x
+    temp = projection(temp, 1:nx); 
+    temp.minHRep(); 
+
+    % Intersezione con i vincoli di stato Gx*x <= gx
+    H_ii_steps = [temp.A; Gx]; 
+    h_ii_steps = [temp.b; gx];
+end
+H_nsteps = H_ii_steps;
+h_nsteps = h_ii_steps;
+disp('Calcolo Controllable Set completato.');
+
+%% 4b. Plot 3D dei Set Invarianti
 figure('Name', 'Control Invariant Set 3D', 'Color', 'w', 'Position', [50, 50, 900, 700]);
 hold on; grid on; view(3); 
-title('Poliedro $\mathcal{X}_f$ in 3D (Fetta $\theta = 0$)', 'Interpreter', 'latex', 'FontSize', 14);
+title(sprintf('Poliedri $\\mathcal{X}_f$ e $\\mathcal{X}_{%d}$ in 3D (Fetta $\\theta = 0$)', N), 'Interpreter', 'latex', 'FontSize', 14);
 
 % Assi aggiornati al tuo vettore di stato: [theta, q, U, W]
 xlabel('u [ft/s]'); ylabel('w [ft/s]'); zlabel('q [rad/s]');
@@ -70,27 +105,46 @@ xlabel('u [ft/s]'); ylabel('w [ft/s]'); zlabel('q [rad/s]');
 
 X_U_f = X_U(:); X_W_f = X_W(:); X_q_f = X_q(:); 
 
-% Imposta la fetta in modo che combaci con la theta iniziale (15 gradi)
+% Imposta la fetta in modo che combaci con la theta iniziale
 theta_slice = 0; 
 X_theta_f = theta_slice * ones(size(X_U_f)); % Fetta corrispondente alla partenza
 
-Validi = true(size(X_U_f));
+% --- Plot Control Invariant Set (O_inf) ---
+Validi_inf = true(size(X_U_f));
 for j = 1:size(G_inf, 1)
-    % Ordine corretto di moltiplicazione: G_inf * [theta; q; u; w]
     Valore = G_inf(j,1)*X_theta_f + G_inf(j,2)*X_q_f + G_inf(j,3)*X_U_f + G_inf(j,4)*X_W_f;
-    Validi = Validi & (Valore <= g_inf(j));
+    Validi_inf = Validi_inf & (Valore <= g_inf(j));
 end
 
-PX = X_U_f(Validi); PY = X_W_f(Validi); PZ = X_q_f(Validi);
+PX_inf = X_U_f(Validi_inf); PY_inf = X_W_f(Validi_inf); PZ_inf = X_q_f(Validi_inf);
 
-if length(PX) > 4
-    K_hull = convhull(PX, PY, PZ);
-    trisurf(K_hull, PX, PY, PZ, 'FaceColor', 'c', 'FaceAlpha', 0.15, 'EdgeColor', 'b', 'EdgeAlpha', 0.1);
+if length(PX_inf) > 4
+    K_hull_inf = convhull(PX_inf, PY_inf, PZ_inf);
+    trisurf(K_hull_inf, PX_inf, PY_inf, PZ_inf, 'FaceColor', 'c', 'FaceAlpha', 0.5, 'EdgeColor', 'b', 'EdgeAlpha', 0.3);
 else
-    disp('ATTENZIONE: Nessun punto valido trovato per il plot. Verifica i limiti di meshgrid.');
+    disp('ATTENZIONE: Nessun punto valido trovato per il plot di O_inf.');
 end
+
+% --- Plot Controllable Set a N passi ---
+Validi_n = true(size(X_U_f));
+for j = 1:size(H_nsteps, 1)
+    Valore = H_nsteps(j,1)*X_theta_f + H_nsteps(j,2)*X_q_f + H_nsteps(j,3)*X_U_f + H_nsteps(j,4)*X_W_f;
+    Validi_n = Validi_n & (Valore <= h_nsteps(j));
+end
+
+PX_n = X_U_f(Validi_n); PY_n = X_W_f(Validi_n); PZ_n = X_q_f(Validi_n);
+
+if length(PX_n) > 4
+    K_hull_n = convhull(PX_n, PY_n, PZ_n);
+    trisurf(K_hull_n, PX_n, PY_n, PZ_n, 'FaceColor', 'g', 'FaceAlpha', 0.15, 'EdgeColor', 'g', 'EdgeAlpha', 0.1);
+else
+    disp('ATTENZIONE: Nessun punto valido trovato per il plot del Controllable Set.');
+end
+
+legend('Control Invariant Set $\mathcal{O}_\infty$', sprintf('%d-step Controllable Set', N), 'Location', 'best', 'Interpreter', 'latex');
+
 %% 5. Setup Problema MPC 
-N = 30; % Orizzonte predittivo sufficientemente lungo
+% N è già stato definito nella sezione precedente
 n_vars = N*nu + N*nx; 
 
 R_blk = kron(eye(N), R);
