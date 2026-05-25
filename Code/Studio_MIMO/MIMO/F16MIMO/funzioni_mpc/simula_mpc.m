@@ -1,0 +1,52 @@
+function [storia_x, storia_u] = simula_mpc(mpc_prob, x_iniziale, t_sim, A_long_ds, B_ctrl_ds, dU_max)
+    % SIMULA_MPC Risolve il problema quadratico e simula l'evoluzione del sistema
+    nx = mpc_prob.nx;
+    nu = mpc_prob.nu;
+    N = mpc_prob.N;
+    n_vars = mpc_prob.n_vars;
+    
+    storia_x = zeros(nx, t_sim+1); storia_x(:,1) = x_iniziale;
+    storia_u = zeros(nu, t_sim);
+    u_previous = [0;0;0]; 
+    options = optimoptions('quadprog', 'Display', 'off');
+    
+    for t = 1:t_sim
+        beq = zeros(N*nx, 1);
+        beq(1:nx) = A_long_ds * storia_x(:,t); 
+        
+        A_rate = zeros(nu*2*N, n_vars); b_rate = zeros(nu*2*N, 1);
+        for k = 1:N
+            idx_u = (k-1)*nu+1:k*nu;
+            A_rate((k-1)*2*nu+1:k*2*nu, idx_u) = [eye(nu); -eye(nu)];
+            if k == 1
+                b_rate((k-1)*2*nu+1:k*2*nu) = [dU_max + u_previous; dU_max - u_previous];
+            else
+                idx_u_prev = (k-2)*nu+1:(k-1)*nu;
+                A_rate((k-1)*2*nu+1:k*2*nu, idx_u_prev) = [-eye(nu); eye(nu)];
+                b_rate((k-1)*2*nu+1:k*2*nu) = [dU_max; dU_max];
+            end
+        end
+        [z_opt, ~, exitflag] = quadprog(mpc_prob.H, mpc_prob.f, [mpc_prob.A_ineq_stat; A_rate], [mpc_prob.b_ineq_stat; b_rate], mpc_prob.Aeq_base, beq, mpc_prob.lb, mpc_prob.ub, [], options);
+        
+        if exitflag < 0
+            error('Infeasible! Il punto allo step %d è fuori da X_N. Riduci leggermente la severità di x_iniziale.', t);
+        end
+        
+        if t == 1
+            X_pred = zeros(nx, N+1);
+            X_pred(:, 1) = x_iniziale;
+            for k = 1:N
+                X_pred(:, k+1) = z_opt(N*nu + (k-1)*nx + 1 : N*nu + k*nx);
+            end
+            plot3(X_pred(3,:), X_pred(4,:), X_pred(2,:), '-rs', 'LineWidth', 2, 'MarkerFaceColor', 'r');
+            plot3(x_iniziale(3), x_iniziale(4), x_iniziale(2), 'k*', 'MarkerSize', 10, 'LineWidth', 2);
+            text(x_iniziale(3), x_iniziale(4), x_iniziale(2)+0.05, ' Partenza', 'FontWeight', 'bold');
+        end
+        
+        u_applicata = z_opt(1:nu);
+        storia_u(:, t) = u_applicata;
+        
+        storia_x(:, t+1) = A_long_ds * storia_x(:,t) + B_ctrl_ds * u_applicata;
+        u_previous = u_applicata;
+    end
+end
