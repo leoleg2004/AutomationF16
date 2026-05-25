@@ -3,7 +3,7 @@
 
 ---
 
-## 🚀 Project Overview
+## Project Overview
 
 This project implements a non-linear **6-DOF (Six Degrees of Freedom)** simulation of an F-16 Fighting Falcon. It interfaces a highly accurate mathematical model in MATLAB/Simulink with the FlightGear graphics engine for real-time visualization via hardware input (Joystick/HOTAS).
 
@@ -11,7 +11,7 @@ The F-16 is renowned for being the first fighter aircraft designed with **Relaxe
 
 ---
 
-## 📐 F-16 MIMO Analysis
+## F-16 MIMO Analysis
 
 The F-16 cannot be treated as a collection of isolated systems; every input influences multiple outputs (e.g., roll induces adverse yaw). The highly coupled nature of its dynamics requires a robust MIMO (Multiple-Input Multiple-Output) approach.
 
@@ -34,7 +34,7 @@ The F-16 cannot be treated as a collection of isolated systems; every input infl
 
 ---
 
-## 🧠 Control Strategies (FCS)
+##Control Strategies (FCS)
 
 To tame the instability, the control architecture is divided into two main channels. We utilize different modern control algorithms for research and performance comparison:
 
@@ -51,7 +51,7 @@ This channel combines aileron and rudder control to coordinate turns. It focuses
 
 ---
 
-## 🔌 Hardware / Software Interface Setup
+## Hardware / Software Interface Setup
 
 The real-time simulation (simulated "Hardware-In-The-Loop") requires precise signal routing between the HOTAS, Simulink, and FlightGear.
 
