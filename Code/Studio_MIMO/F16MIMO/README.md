@@ -20,7 +20,7 @@ long
 Matrice di Input (B 
 long
 ​	
- ): Definisce l'autorità dei comandi (principalmente gli equilibratori/stabilizzatori orizzontali) sul sistema.
+ ): Definisce l'autorità dei comandi (principalmente gli equilibratori/stabilizzatori orizzontali) sul sistema, viene poi divisa in B_ctrl e B_wind, la prima sarà utilizzata per creare il controllo lqr e mpc.
 
 L'automazione garantisce che il velivolo mantenga i parametri desiderati anche in regimi di volo complessi, correggendo istantaneamente le perturbazioni esterne.
 
