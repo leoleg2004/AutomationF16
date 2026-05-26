@@ -4,9 +4,10 @@ function plot_risultati(t_sim, storia_x, storia_u, U_min, U_max)
     figure('Name', 'Risultati MPC: Stati del Velivolo', 'Color', 'w', 'Position', [100 100 900 600]);
     subplot(2,2,1); plot(0:t_sim, storia_x(1,:), '-b', 'LineWidth', 1.5); title('Pitch Angle ($\theta$) [rad]'); grid on; 
     subplot(2,2,2); plot(0:t_sim, storia_x(2,:), '-r', 'LineWidth', 1.5); title('Pitch Rate (q) [rad/s]'); grid on; 
-    subplot(2,2,3); plot(0:t_sim, storia_x(3,:), '-m', 'LineWidth', 1.5); title('Velocità Forward (u) [ft/s]'); grid on; 
-    subplot(2,2,4); plot(0:t_sim, storia_x(4,:), '-c', 'LineWidth', 1.5); title('Velocità Verticale (w) [ft/s]'); grid on;
-    
+    subplot(2,2,3); plot(0:t_sim, storia_x(3,:), '-m', 'LineWidth', 1.5); title('Velocit\`a Forward (u) [ft/s]'); grid on; 
+subplot(2,2,4); plot(0:t_sim, storia_x(4,:), '-c', 'LineWidth', 1.5); title('Velocit\`a Verticale (w) [ft/s]'); grid on;
+
+
     figure('Name', 'Risultati MPC: Sforzo degli Attuatori', 'Color', 'w', 'Position', [150 150 700 800]);
     subplot(3,1,1); stairs(0:t_sim-1, storia_u(1,:), '-g', 'LineWidth', 1.5); hold on;
     yline(U_max(1), 'k--'); yline(U_min(1), 'k--'); title(' Spinta [lbf]'); grid on; ylim([U_min(1)-2000, U_max(1)+2000]);

@@ -1,3 +1,5 @@
+%script usato utilizzando lo particle swarm optimization e impostando i
+%vincoli di volo di crociera dell'aereo in volo di crociera
 %% Specifiche del modello F16
 model = 'F16';
 opspec = operspec(model);
