@@ -58,15 +58,15 @@ disp('--- CALCOLO del Control Invariant Set ---');
 plot_cis(G_inf, g_inf, x_ref);
 
 %% 5. Setup Problema MPC 
-N = 50; % Orizzonte predittivo 
+N = 30; % Orizzonte predittivo 
 mpc_prob = setup_mpc(N, nx, nu, A_long_ds, B_ctrl_ds, Q, P, R, U_min, U_max, Gx, gx, G_inf, g_inf, x_ref, u_ref);
 
 %% 6. Simulazione MPC Completa 
 disp('--- Avvio Ottimizzazione e Simulazione MPC ---');
 % Ordine: [theta; q; u; w]
-x_iniziale = [deg2rad(10);  % theta: gradi convertiti in rad
+x_iniziale = [deg2rad(25);  % theta: gradi convertiti in rad
               deg2rad(20);  % q: velocità angolare
-              10;           % u: ft/s di velocità forward
+              20;           % u: ft/s di velocità forward
               20];          % w: velocità verticale
 t_sim = 350; % Aumentato a 350 passi per permettere alla dinamica lenta (Fugoide) di centrare perfettamente il target
 
