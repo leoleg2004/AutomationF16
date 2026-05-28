@@ -89,7 +89,6 @@ legend({'Traiettoria 1', 'Start 1', 'Traiettoria 2', 'Start 2', 'Traiettoria 3',
 %% 3b. Visualizzazione 3D della Funzione di Lyapunov LQR
 figure('Name', 'Funzione di Lyapunov 3D - LQR', 'Color', 'w');
 hold on; grid on;
-
 % 1. Superficie 3D V(w, q) fissando theta=0 e u=0
 % Usiamo la stessa griglia usata per il contour (W_grid, Q_rad)
 V_surf = zeros(size(W_grid));
@@ -99,12 +98,10 @@ for i = 1:size(W_grid, 1)
         V_surf(i,j) = stato_surf' * P * stato_surf;
     end
 end
-
 % Disegniamo la superficie
 surf(W_grid, Q_deg, V_surf, 'EdgeColor', 'none', 'FaceAlpha', 0.7);
 colormap jet;
 colorbar;
-
 % 2. Proiezione delle traiettorie sulla superficie 3D
 for i = 1:size(x0, 2)
     [t, x] = ode45(dxdt, [0 3], x0(:, i));
@@ -119,10 +116,9 @@ for i = 1:size(x0, 2)
     % Punto di inizio
     plot3(x(1,4), rad2deg(x(1,2)), V_traiettoria(1), 'ro', 'MarkerFaceColor', 'r', 'MarkerSize', 6);
 end
-
 % Grafica e Labels
 title('Funzione di Lyapunov $V(x) = x^T P x$ (LQR)', 'Interpreter', 'latex')
 xlabel('$w$ [ft/s]', 'Interpreter', 'latex')
 ylabel('$q$ [deg/s]', 'Interpreter', 'latex')
 zlabel('$V(x)$', 'Interpreter', 'latex')
-view(-45, 30);
+view(-45, 30); questo codcie funziona perfettament eusalo nella funzione 

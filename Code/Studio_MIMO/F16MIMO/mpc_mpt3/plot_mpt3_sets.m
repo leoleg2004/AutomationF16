@@ -7,9 +7,11 @@ function plot_mpt3_sets(CIS, x_ref, storia_x)
 
     CIS_shifted = CIS + x_ref; 
 
-    % Essendo in 4D, proiettiamo su [q, U, W] (indici 2, 3, 4) per avere la visualizzazione 3D
-    disp('Proiezione dei poliedri 4D in uno spazio 3D per consentire il plot...');
-    CIS_3D = CIS_shifted.projection([2, 3, 4]);
+    % Essendo in 4D, estraiamo una "fetta" (slice) a theta = x_ref(1) invece 
+    % di calcolare la proiezione. La proiezione di poliedri 4D complessi 
+    % blocca MATLAB per via dell'elevato costo computazionale.
+    disp('Estrazione di una slice 3D del poliedro 4D (a theta=x_ref) per consentire il plot...');
+    CIS_3D = CIS_shifted.slice(1, x_ref(1));
 
     figure('Name', 'Traiettoria nel Set Invariante 3D', 'Color', 'w', 'Position', [100, 100, 1000, 700]);
     

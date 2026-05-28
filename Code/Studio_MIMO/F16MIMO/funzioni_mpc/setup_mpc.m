@@ -1,4 +1,4 @@
-function mpc_prob = setup_mpc(N, nx, nu, A_long_ds, B_ctrl_ds, Q, P, R, U_min, U_max, Gx, gx, G_inf, g_inf)
+function mpc_prob = setup_mpc(N, nx, nu, A_long_ds, B_ctrl_ds, Q, P, R, U_min, U_max, Gx, gx, G_inf, g_inf, x_ref, u_ref)
     % SETUP_MPC Prepara tutte le matrici per il quadprog
     n_vars = N*nu + N*nx; 
     
@@ -6,7 +6,16 @@ function mpc_prob = setup_mpc(N, nx, nu, A_long_ds, B_ctrl_ds, Q, P, R, U_min, U
     Q_blk = blkdiag(kron(eye(N-1), Q), P);
     H = 2 * blkdiag(R_blk, Q_blk);         
     
+    % Termine lineare della funzione di costo per l'inseguimento del riferimento
     f = zeros(n_vars, 1);                  
+    for k = 1:N
+        f((k-1)*nu + 1 : k*nu) = -2 * R * u_ref;
+    end
+    for k = 1:N-1
+        f(N*nu + (k-1)*nx + 1 : N*nu + k*nx) = -2 * Q * x_ref;
+    end
+    f(N*nu + (N-1)*nx + 1 : N*nu + N*nx) = -2 * P * x_ref;
+    
     Aeq_base = zeros(N*nx, n_vars);
     for k = 1:N
         Aeq_base((k-1)*nx + 1 : k*nx, (k-1)*nu + 1 : k*nu) = -B_ctrl_ds;

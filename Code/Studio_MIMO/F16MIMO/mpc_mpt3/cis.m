@@ -13,7 +13,11 @@ f = [fx; fu + Fu*(K*x_ref - u_ref)];
 % 4. Calcolo del CIS (G(x) <= g)
 CIS_poly_prev = Polyhedron();
 CIS_poly_curr = Polyhedron(F,f);
+iter = 0;
 while CIS_poly_prev.isEmptySet || CIS_poly_prev ~= CIS_poly_curr
+    iter = iter + 1;
+    % disp(['Calcolo CIS - Iterazione: ', num2str(iter)]); % Opzionale per il debug
+    
     % Memorizzare il vecchio candidato
     CIS_poly_prev = CIS_poly_curr;
 
@@ -24,7 +28,10 @@ while CIS_poly_prev.isEmptySet || CIS_poly_prev ~= CIS_poly_curr
             f];
 
     CIS_poly_curr = Polyhedron(G_hat, g_hat);
-
+    
+    % CRITICO: Rimuove le disequazioni ridondanti! 
+    % Senza questo, le matrici esplodono e MATLAB si blocca.
+    CIS_poly_curr.minHRep();
 end
 % 5. Disequazioni che descrivono il CSI (G(x) <= g)
 G = CIS_poly_curr.A;

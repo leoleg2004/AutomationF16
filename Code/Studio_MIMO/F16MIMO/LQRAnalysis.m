@@ -61,33 +61,33 @@ figure('Name', 'Controllo LQR Puro: Stati a Ciclo Chiuso', 'Color', 'w', 'Positi
 subplot(4, 1, 1)
 plot(t, xf(1,:) * rad2deg, 'b', 'LineWidth', 2); hold on;
 yline(0, 'k--', 'LineWidth', 1);
-ylabel('Ampiezza [deg]')
-title('\theta (Pitch Angle)')
+ylabel('Ampiezza [deg]', 'Interpreter', 'latex')
+title('$\theta$ (Pitch Angle)', 'Interpreter', 'latex')
 grid on;
 
 % 2. Rateo di Beccheggio (q)
 subplot(4, 1, 2)
 plot(t, xf(2,:) * rad2deg, 'r', 'LineWidth', 2); hold on;
 yline(0, 'k--', 'LineWidth', 1);
-ylabel('Ampiezza [deg/s]')
-title('q (Pitch Rate)')
+ylabel('Ampiezza [deg/s]', 'Interpreter', 'latex')
+title('$q$ (Pitch Rate)', 'Interpreter', 'latex')
 grid on;
 
 % 3. Velocità asse X (U)
 subplot(4, 1, 3)
 plot(t, xf(3,:), 'Color', colore_giallo, 'LineWidth', 2); hold on;
 yline(0, 'k--', 'LineWidth', 1);
-ylabel('Ampiezza [ft/s]')
-title('U (Velocità Orizzontale)')
+ylabel('Ampiezza [ft/s]', 'Interpreter', 'latex')
+title('$U$ (Velocit\`a Orizzontale)', 'Interpreter', 'latex')
 grid on;
 
 % 4. Velocità asse Z (W)
 subplot(4, 1, 4)
 plot(t, xf(4,:), 'g', 'LineWidth', 2); hold on;
 yline(0, 'k--', 'LineWidth', 1);
-xlabel('Tempo [s]') 
-ylabel('Ampiezza [ft/s]')
-title('W (Velocità Verticale \approx \alpha)')
+xlabel('Tempo [s]', 'Interpreter', 'latex') 
+ylabel('Ampiezza [ft/s]', 'Interpreter', 'latex')
+title('$W$ (Velocit\`a Verticale $\approx \alpha$)', 'Interpreter', 'latex')
 grid on;
 
 % -------------------------------------------------------------------------
@@ -159,4 +159,5 @@ dxdt = @(t, x) A_cl * x;
 %% 5. RITRATTO DI FASE E FUNZIONE DI LYAPUNOV 3D (LQR)
 % Usa la nuova funzione dedicata per generare il ritratto di fase 2D e
 % la funzione di Lyapunov in 3D
-plot_lyapunov(P, A_cl);
+plot_lyapunov_lqr(P, A_cl);
+

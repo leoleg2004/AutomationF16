@@ -1,8 +1,12 @@
-function plot_cis(G_inf, g_inf)
+function plot_cis(G_inf, g_inf, x_ref)
+    if nargin < 3
+        x_ref = zeros(4,1);
+    end
+    
     % PLOT_CIS Disegna in 3D il Control Invariant Set
     figure('Name', 'Control Invariant Set 3D', 'Color', 'w', 'Position', [50, 50, 900, 700]);
     hold on; grid on; view(3); 
-    title('Poliedro $\mathcal{X}_f$ in 3D (Fetta $\theta = 0$)', 'Interpreter', 'latex', 'FontSize', 14);
+    title(['Poliedro $\mathcal{X}_f$ in 3D (Fetta $\theta = ', num2str(x_ref(1)), '$)'], 'Interpreter', 'latex', 'FontSize', 14);
     
     % Assi aggiornati al tuo vettore di stato: [theta, q, U, W]
     xlabel('u [ft/s]'); ylabel('w [ft/s]'); zlabel('q [rad/s]');
@@ -14,9 +18,9 @@ function plot_cis(G_inf, g_inf)
     
     X_U_f = X_U(:); X_W_f = X_W(:); X_q_f = X_q(:); 
     
-    % Imposta la fetta in modo che combaci con la theta iniziale
-    theta_slice = 0; 
-    X_theta_f = theta_slice * ones(size(X_U_f)); % Fetta corrispondente alla partenza
+    % Imposta la fetta in modo che combaci con la theta del target
+    theta_slice = x_ref(1); 
+    X_theta_f = theta_slice * ones(size(X_U_f)); % Fetta corrispondente al target
     
     Validi_inf = true(size(X_U_f));
     for j = 1:size(G_inf, 1)
@@ -30,8 +34,12 @@ function plot_cis(G_inf, g_inf)
         K_hull_inf = convhull(PX_inf, PY_inf, PZ_inf);
         trisurf(K_hull_inf, PX_inf, PY_inf, PZ_inf, 'FaceColor', 'c', 'FaceAlpha', 0.5, 'EdgeColor', 'b', 'EdgeAlpha', 0.3);
     else
-        disp('ATTENZIONE: Nessun punto valido trovato per il plot di O_inf.');
+        disp('ATTENZIONE: Nessun punto valido trovato per il plot di O_inf sulla fetta scelta.');
     end
     
-    legend('Control Invariant Set $\mathcal{O}_\infty$', 'Location', 'best', 'Interpreter', 'latex');
+    % Aggiungi il Target al Plot
+    plot3(x_ref(3), x_ref(4), x_ref(2), 'kX', 'MarkerSize', 12, 'LineWidth', 3);
+    text(x_ref(3), x_ref(4), x_ref(2)+0.05, ' Target', 'FontWeight', 'bold', 'FontSize', 12);
+    
+    legend({'Control Invariant Set $\mathcal{O}_\infty$', 'Target di Riferimento'}, 'Location', 'best', 'Interpreter', 'latex');
 end

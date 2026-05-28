@@ -1,10 +1,17 @@
-function [G_inf, g_inf] = cis(A, B, Fx, fx, Fu, fu, Q, R)
+function [G_inf, g_inf] = cis(A, B, x_ref, u_ref, Fx, fx, Fu, fu, Q, R)
     % Control Invariant Set Iterativo tramite Metodo Matriciale (No Polyhedron)
     [K, ~, ~] = dlqr(A, B, Q, R);
     A_cl = A - B*K;
-    Gx = Fx; gx = fx;
-    Gu_x = [-K; K]; gu_x = [fu(1:3); fu(4:6)];
-    G = [Gx; Gu_x]; g = [gx; gu_x];
+    
+    % Traslazione dei vincoli rispetto al riferimento z = x - x_ref
+    Gx = Fx; 
+    gx = fx - Fx*x_ref;
+    
+    Gu_x = [-K; K]; 
+    gu_x = [fu(1:3) - Fu(1:3,:)*u_ref; fu(4:6) - Fu(4:6,:)*u_ref];
+    
+    G = [Gx; Gu_x]; 
+    g = [gx; gu_x];
 
     G_inf = G; g_inf = g;
     max_iter = 100; tol = 1e-6;
@@ -16,4 +23,8 @@ function [G_inf, g_inf] = cis(A, B, Fx, fx, Fu, fu, Q, R)
         G_inf = [G_inf; G_next];
         g_inf = [g_inf; g];
     end
+    
+    % Ritraslazione di g_inf in modo che G_inf * x <= g_inf 
+    % (dato che attualmente G_inf * z <= g_inf)
+    g_inf = g_inf + G_inf * x_ref;
 end

@@ -38,8 +38,8 @@ function [storia_x, storia_u] = simula_mpc(mpc_prob, x_iniziale, t_sim, A_long_d
             for k = 1:N
                 X_pred(:, k+1) = z_opt(N*nu + (k-1)*nx + 1 : N*nu + k*nx);
             end
-            plot3(X_pred(3,:), X_pred(4,:), X_pred(2,:), '-rs', 'LineWidth', 2, 'MarkerFaceColor', 'r');
-            plot3(x_iniziale(3), x_iniziale(4), x_iniziale(2), 'k*', 'MarkerSize', 10, 'LineWidth', 2);
+            plot3(X_pred(3,:), X_pred(4,:), X_pred(2,:), '-rs', 'LineWidth', 2, 'MarkerFaceColor', 'r', 'DisplayName', 'Predizione Ottima');
+            plot3(x_iniziale(3), x_iniziale(4), x_iniziale(2), 'k*', 'MarkerSize', 10, 'LineWidth', 2, 'DisplayName', 'Partenza');
             text(x_iniziale(3), x_iniziale(4), x_iniziale(2)+0.05, ' Partenza', 'FontWeight', 'bold');
         end
         
@@ -49,4 +49,12 @@ function [storia_x, storia_u] = simula_mpc(mpc_prob, x_iniziale, t_sim, A_long_d
         storia_x(:, t+1) = A_long_ds * storia_x(:,t) + B_ctrl_ds * u_applicata;
         u_previous = u_applicata;
     end
+    
+    % Plot della traiettoria effettivamente percorsa
+    plot3(storia_x(3,:), storia_x(4,:), storia_x(2,:), '-b', 'LineWidth', 2.5, 'DisplayName', 'Traiettoria Effettiva');
+    plot3(storia_x(3,end), storia_x(4,end), storia_x(2,end), 'gp', 'MarkerSize', 15, 'MarkerFaceColor', 'g', 'DisplayName', 'Arrivo Effettivo');
+    text(storia_x(3,end), storia_x(4,end), storia_x(2,end)-0.05, ' Arrivo', 'FontWeight', 'bold', 'Color', 'g');
+    
+    % Aggiorna la legenda includendo i nuovi plot
+    legend('show', 'Location', 'best', 'Interpreter', 'latex');
 end
