@@ -21,8 +21,8 @@ function [K, P, Q, R, A_cl] = progetta_LQR_discreto(A, B)
     R = diag([1/max_thrust^2, 1/max_elev^2, 1/max_lef^2]);
     
     % Fattori di tuning per dare più aggressività globale (se necessario)
-    rho_q = 1; 
-    rho_r = 100; 
+    rho_q = 20;  % Bilanciamento: molto reattivo ma senza rendere il problema Infeasible
+    rho_r = 1;   % Mantiene uno sforzo di controllo ragionevole per non violare i vincoli con x_iniziale elevato 
     
     Q = rho_q * Q;
     R = rho_r * R;

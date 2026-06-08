@@ -1,4 +1,4 @@
-function plot_cis(G_inf, g_inf, x_ref)
+function plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max)
     if nargin < 3
         x_ref = zeros(4,1);
     end
@@ -12,9 +12,9 @@ function plot_cis(G_inf, g_inf, x_ref)
     xlabel('u [ft/s]'); ylabel('w [ft/s]'); zlabel('q [rad/s]');
     
     % Griglia coerente con i tuoi stati (U, W, q)
-    [X_U, X_W, X_q] = meshgrid(linspace(-50, 50, 40), ... % Range per u (Stato 3)
-                               linspace(-50, 50, 40), ... % Range per w (Stato 4)
-                               linspace(-deg2rad(40), deg2rad(40), 40)); % Range per q (Stato 2)
+    [X_U, X_W, X_q] = meshgrid(linspace(-50, 50, 20), ... % Range per u (Stato 3)
+                               linspace(-50, 50, 20), ... % Range per w (Stato 4)
+                               linspace(-deg2rad(40), deg2rad(40), 20)); % Range per q (Stato 2)
     
     X_U_f = X_U(:); X_W_f = X_W(:); X_q_f = X_q(:); 
     
@@ -32,14 +32,73 @@ function plot_cis(G_inf, g_inf, x_ref)
     
     if length(PX_inf) > 4
         K_hull_inf = convhull(PX_inf, PY_inf, PZ_inf);
-        trisurf(K_hull_inf, PX_inf, PY_inf, PZ_inf, 'FaceColor', 'c', 'FaceAlpha', 0.5, 'EdgeColor', 'b', 'EdgeAlpha', 0.3);
+        h_inf = trisurf(K_hull_inf, PX_inf, PY_inf, PZ_inf, 'FaceColor', 'c', 'FaceAlpha', 0.8, 'EdgeColor', 'b', 'EdgeAlpha', 0.3);
+        leg_handles = h_inf;
+        leg_names = {'Control Invariant Set $\mathcal{O}_\infty$'};
     else
         disp('ATTENZIONE: Nessun punto valido trovato per il plot di O_inf sulla fetta scelta.');
+        leg_handles = [];
+        leg_names = {};
+    end
+
+    % --- NOVITÀ: Calcolo e Plot N-Step Feasible Set ---
+    if nargin >= 6
+        disp('Calcolo del Set Feasible N-Step X_N in corso (esplorazione vincoli)...');
+        nx = mpc_prob.nx;
+        nu = mpc_prob.nu;
+        N = mpc_prob.N;
+        n_vars = mpc_prob.n_vars;
+        
+        options = optimoptions('linprog', 'Display', 'off');
+        A_rate = zeros(nu*2*N, n_vars); 
+        b_rate_base = zeros(nu*2*N, 1);
+        for k = 1:N
+            idx_u = (k-1)*nu+1:k*nu;
+            A_rate((k-1)*2*nu+1:k*2*nu, idx_u) = [eye(nu); -eye(nu)];
+            if k > 1
+                idx_u_prev = (k-2)*nu+1:(k-1)*nu;
+                A_rate((k-1)*2*nu+1:k*2*nu, idx_u_prev) = [-eye(nu); eye(nu)];
+                b_rate_base((k-1)*2*nu+1:k*2*nu) = [dU_max; dU_max];
+            end
+        end
+        A_ineq_tot = [mpc_prob.A_ineq_stat; A_rate];
+        
+        u_previous = [0;0;0];
+        b_rate = b_rate_base;
+        b_rate(1:2*nu) = [dU_max + u_previous; dU_max - u_previous];
+        b_ineq_tot = [mpc_prob.b_ineq_stat; b_rate];
+
+        f_lin = zeros(n_vars, 1);
+        Validi_N = false(size(X_U_f));
+        
+        for i = 1:length(X_U_f)
+            if Validi_inf(i)
+                % Se è già in O_inf, è banalmente in X_N
+                Validi_N(i) = true;
+                continue;
+            end
+            
+            x0_test = [theta_slice; X_q_f(i); X_U_f(i); X_W_f(i)];
+            beq = zeros(N*nx, 1);
+            beq(1:nx) = A_long_ds * x0_test; 
+            
+            [~, ~, exitflag] = linprog(f_lin, A_ineq_tot, b_ineq_tot, mpc_prob.Aeq_base, beq, mpc_prob.lb, mpc_prob.ub, options);
+            if exitflag >= 0 || exitflag == -3
+                Validi_N(i) = true;
+            end
+        end
+        
+        PX_N = X_U_f(Validi_N); PY_N = X_W_f(Validi_N); PZ_N = X_q_f(Validi_N);
+        if length(PX_N) > 4
+            K_hull_N = convhull(PX_N, PY_N, PZ_N);
+            h_N = trisurf(K_hull_N, PX_N, PY_N, PZ_N, 'FaceColor', 'y', 'FaceAlpha', 0.2, 'EdgeColor', 'y', 'EdgeAlpha', 0.1);
+            leg_handles(end+1) = h_N;
+            leg_names{end+1} = sprintf('Feasible N-Step Set $\\mathcal{X}_{%d}$', N);
+            title(['Poliedri $\mathcal{O}_\infty$ e $\mathcal{X}_{', num2str(N), '}$ in 3D (Fetta $\theta = ', num2str(theta_slice), '$)'], 'Interpreter', 'latex', 'FontSize', 14);
+        end
     end
     
-    % Aggiungi il Target al Plot
-    plot3(x_ref(3), x_ref(4), x_ref(2), 'kX', 'MarkerSize', 12, 'LineWidth', 3);
-    text(x_ref(3), x_ref(4), x_ref(2)+0.05, ' Target', 'FontWeight', 'bold', 'FontSize', 12);
-    
-    legend({'Control Invariant Set $\mathcal{O}_\infty$', 'Target di Riferimento'}, 'Location', 'best', 'Interpreter', 'latex');
+    if ~isempty(leg_handles)
+        legend(leg_handles, leg_names, 'Location', 'best', 'Interpreter', 'latex');
+    end
 end

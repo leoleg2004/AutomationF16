@@ -54,23 +54,23 @@ u_ref = zeros(nu, 1);
 disp('--- CALCOLO del Control Invariant Set ---');
 [G_inf, g_inf] = cis(A_long_ds, B_ctrl_ds, x_ref, u_ref, Fx, fx, Fu, fu, Q, R);
 
-%% 4b. Plot 3D dei Set Invarianti
-plot_cis(G_inf, g_inf, x_ref);
-
 %% 5. Setup Problema MPC 
-N = 30; % Orizzonte predittivo 
+N = 40; % Orizzonte predittivo 
 mpc_prob = setup_mpc(N, nx, nu, A_long_ds, B_ctrl_ds, Q, P, R, U_min, U_max, Gx, gx, G_inf, g_inf, x_ref, u_ref);
+
+%% 4b. Plot 3D dei Set Invarianti e Feasible Set N-Step
+plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max);
 
 %% 6. Simulazione MPC Completa 
 disp('--- Avvio Ottimizzazione e Simulazione MPC ---');
 % Ordine: [theta; q; u; w]
-x_iniziale = [deg2rad(25);  % theta: gradi convertiti in rad
-              deg2rad(20);  % q: velocità angolare
-              20;           % u: ft/s di velocità forward
-              20];          % w: velocità verticale
-t_sim = 350; % Aumentato a 350 passi per permettere alla dinamica lenta (Fugoide) di centrare perfettamente il target
+x_iniziale = [deg2rad(5);  % theta: gradi convertiti in rad
+              deg2rad(5);  % q: velocità angolare
+              2;           % u: ft/s di velocità forward
+              30];          % w: velocità verticale
+t_sim = 100; % tempo di simulazione
 
-[storia_x, storia_u] = simula_mpc(mpc_prob, x_iniziale, t_sim, A_long_ds, B_ctrl_ds, dU_max);
+[storia_x, storia_u, storia_costo] = simula_mpc(mpc_prob, x_iniziale, t_sim, A_long_ds, B_ctrl_ds, dU_max);
 disp('Ottimizzazione Riuscita. Il modello è matematicamente solido.');
 
 disp('---------------------------------------------------');
@@ -87,5 +87,5 @@ disp('---------------------------------------------------');
 plot_risultati(t_sim, storia_x, storia_u, U_min, U_max, x_ref, u_ref);
 
 
-%% 8. plot clf ljapunov function
-plot_lyapunov_discrete(P,A_cl,Ts);
+%% 8. Plot Funzionale di Costo MPC 3D
+plot_mpc_cost_3d(mpc_prob, A_long_ds, dU_max, storia_x, storia_costo, Ts);
