@@ -1,3 +1,14 @@
+% =========================================================================
+% Copyright (c) 2026 Ing. Leggeri Leonardo
+% Tutti i diritti riservati.
+%
+% ATTENZIONE: Questo software e il relativo codice sorgente sono di proprietà 
+% esclusiva dell'Ing. Leggeri Leonardo. È severamente vietata la copia, 
+% la distribuzione, la modifica o la vendita a terzi senza l'esplicito 
+% consenso scritto dell'autore. La distribuzione o la vendita non autorizzata 
+% costituisce reato ed è perseguibile penalmente secondo le leggi vigenti.
+% =========================================================================
+
 function [K, P, Q, R, A_cl] = progetta_LQR_discreto(A, B)
     % =====================================================================
     % Calcolo pesi LQR (Regola di Bryson) coerenti con il modello F-16

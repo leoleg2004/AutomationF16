@@ -1,3 +1,14 @@
+% =========================================================================
+% Copyright (c) 2026 Ing. Leggeri Leonardo
+% Tutti i diritti riservati.
+%
+% ATTENZIONE: Questo software e il relativo codice sorgente sono di proprietà 
+% esclusiva dell'Ing. Leggeri Leonardo. È severamente vietata la copia, 
+% la distribuzione, la modifica o la vendita a terzi senza l'esplicito 
+% consenso scritto dell'autore. La distribuzione o la vendita non autorizzata 
+% costituisce reato ed è perseguibile penalmente secondo le leggi vigenti.
+% =========================================================================
+
 function [G,g] = cis(A, B, x_ref, u_ref, Fx, fx, Fu, fu, Q, R)
 
 % 1. Formulazione K del controllore LQR

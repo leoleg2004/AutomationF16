@@ -1,3 +1,14 @@
+% =========================================================================
+% Copyright (c) 2026 Ing. Leggeri Leonardo
+% Tutti i diritti riservati.
+%
+% ATTENZIONE: Questo software e il relativo codice sorgente sono di proprietà 
+% esclusiva dell'Ing. Leggeri Leonardo. È severamente vietata la copia, 
+% la distribuzione, la modifica o la vendita a terzi senza l'esplicito 
+% consenso scritto dell'autore. La distribuzione o la vendita non autorizzata 
+% costituisce reato ed è perseguibile penalmente secondo le leggi vigenti.
+% =========================================================================
+
 function [storia_x, storia_u, storia_costo] = simula_mpc(mpc_prob, x_iniziale, t_sim, A_long_ds, B_ctrl_ds, dU_max)
     % SIMULA_MPC Risolve il problema quadratico e simula l'evoluzione del sistema
     nx = mpc_prob.nx;
