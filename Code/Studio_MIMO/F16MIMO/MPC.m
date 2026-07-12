@@ -19,7 +19,7 @@ disp('Conversione del modello da Continuo a Discreto...');
 % =========================================================================
 % NOTA SUI PESI Q e R:
 % Se vuoi modificare l'aggressività del controllore (pesi Q e R),
-% apri il file "funzioni_lqr/progetta_LQR_discreto.m" e modificali lì dentro!
+% apri il file "funzioni_lqr/progetta_LQR_discreto.m" e modificali lì dentro
 % =========================================================================
 disp('Progetto LQR discreto tramite funzione dedicata...');
 [K, P, Q, R, A_cl] = progetta_LQR_discreto(A_long_ds, B_ctrl_ds);
