@@ -39,6 +39,29 @@ function [K, P, Q, R, A_cl] = progetta_LQR_discreto(A, B)
     R = rho_r * R;
     
     % Sintesi LQR
+    fprintf('DEBUG progetta_LQR_discreto:\n');
+    fprintf('Size of A: %dx%d\n', size(A,1), size(A,2));
+    fprintf('Size of B: %dx%d\n', size(B,1), size(B,2));
+    fprintf('Size of Q before dlqr: %dx%d\n', size(Q,1), size(Q,2));
+    fprintf('Size of R before dlqr: %dx%d\n', size(R,1), size(R,2));
+    
+    % Assicuriamoci che Q e R siano delle dimensioni esatte
+    Nx = size(A, 1);
+    Nu = size(B, 2);
+    
+    if size(Q, 1) ~= Nx || size(Q, 2) ~= Nx
+        disp('ATTENZIONE: Q non è della dimensione corretta! Ricostruzione sicura in corso...');
+        Q_new = eye(Nx);
+        n_min = min(Nx, size(Q,1));
+        Q_new(1:n_min, 1:n_min) = Q(1:n_min, 1:n_min);
+        Q = Q_new;
+    end
+    
+    if size(R, 1) ~= Nu || size(R, 2) ~= Nu
+        disp('ATTENZIONE: R non è della dimensione corretta! Ricostruzione sicura in corso...');
+        R = eye(Nu);
+    end
+    
     [K, P, ~] = dlqr(A, B, Q, R);
     A_cl = A - B*K;
 end

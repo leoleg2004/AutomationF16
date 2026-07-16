@@ -9,15 +9,19 @@
 % costituisce reato ed è perseguibile penalmente secondo le leggi vigenti.
 % =========================================================================
 
-function plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max)
+function plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max, parent_tab)
     if nargin < 3
         x_ref = zeros(4,1);
     end
+    if nargin < 7
+        fig1 = figure('Name', 'Control Invariant Set 3D', 'Color', 'w', 'Position', [50, 50, 900, 700]);
+        parent_tab = fig1;
+    end
     
     % PLOT_CIS Disegna in 3D il Control Invariant Set
-    figure('Name', 'Control Invariant Set 3D', 'Color', 'w', 'Position', [50, 50, 900, 700]);
-    hold on; grid on; view(3); 
-    title(['Poliedro $\mathcal{X}_f$ in 3D (Fetta $\theta = ', num2str(x_ref(1)), '$)'], 'Interpreter', 'latex', 'FontSize', 14);
+    ax = axes('Parent', parent_tab);
+    hold(ax, 'on'); grid(ax, 'on'); view(ax, 3); 
+    title(ax, ['Poliedro $\mathcal{X}_f$ in 3D (Fetta $\theta = ', num2str(x_ref(1)), '$)'], 'Interpreter', 'latex', 'FontSize', 14);
     
     % Assi aggiornati al tuo vettore di stato: [theta, q, U, W]
     xlabel('u [ft/s]'); ylabel('w [ft/s]'); zlabel('q [rad/s]');
@@ -43,7 +47,7 @@ function plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max)
     
     if length(PX_inf) > 4
         K_hull_inf = convhull(PX_inf, PY_inf, PZ_inf);
-        h_inf = trisurf(K_hull_inf, PX_inf, PY_inf, PZ_inf, 'FaceColor', 'c', 'FaceAlpha', 0.8, 'EdgeColor', 'b', 'EdgeAlpha', 0.3);
+        h_inf = trisurf(K_hull_inf, PX_inf, PY_inf, PZ_inf, 'Parent', ax, 'FaceColor', 'c', 'FaceAlpha', 0.8, 'EdgeColor', 'b', 'EdgeAlpha', 0.3);
         leg_handles = h_inf;
         leg_names = {'Control Invariant Set $\mathcal{O}_\infty$'};
     else
@@ -102,10 +106,10 @@ function plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max)
         PX_N = X_U_f(Validi_N); PY_N = X_W_f(Validi_N); PZ_N = X_q_f(Validi_N);
         if length(PX_N) > 4
             K_hull_N = convhull(PX_N, PY_N, PZ_N);
-            h_N = trisurf(K_hull_N, PX_N, PY_N, PZ_N, 'FaceColor', 'y', 'FaceAlpha', 0.2, 'EdgeColor', 'y', 'EdgeAlpha', 0.1);
+            h_N = trisurf(K_hull_N, PX_N, PY_N, PZ_N, 'Parent', ax, 'FaceColor', 'y', 'FaceAlpha', 0.2, 'EdgeColor', 'y', 'EdgeAlpha', 0.1);
             leg_handles(end+1) = h_N;
             leg_names{end+1} = sprintf('Feasible N-Step Set $\\mathcal{X}_{%d}$', N);
-            title(['Poliedri $\mathcal{O}_\infty$ e $\mathcal{X}_{', num2str(N), '}$ in 3D (Fetta $\theta = ', num2str(theta_slice), '$)'], 'Interpreter', 'latex', 'FontSize', 14);
+            title(ax, ['Poliedri $\mathcal{O}_\infty$ e $\mathcal{X}_{', num2str(N), '}$ in 3D (Fetta $\theta = ', num2str(theta_slice), '$)'], 'Interpreter', 'latex', 'FontSize', 14);
         end
     end
     

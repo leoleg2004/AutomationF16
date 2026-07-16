@@ -17,8 +17,8 @@ storia_u_nom = storia_u;
 % 2. Setup della Tempesta (Matrice di Diffusione G)
 disp('Configurazione della tempesta di vento (Moto Browniano)...');
 Bwind = B_long(:, end-1:end); 
-sigma_vento_1 = 0.5; 
-sigma_vento_2 = 0.5; 
+sigma_vento_1 = 0.20; 
+sigma_vento_2 = 0.80; 
 G = Bwind * diag([sigma_vento_1, sigma_vento_2]);
 
 % 3. Simulazione Anello Chiuso Stocastico
@@ -28,6 +28,8 @@ disp('--- Avvio Simulazione MPC ANELLO CHIUSO con Vento ---');
 disp('Simulazione Completata!');
 
 % 4. Plot dei risultati Comparativi
+tabs = crea_dashboard_mpc(); % Recupera i tab generati da MPC.m
+
 t_plot = (0:t_sim) * Ts;
 t_plot_u = (0:t_sim-1) * Ts;
 
@@ -37,10 +39,10 @@ set(groot, 'defaultLegendInterpreter', 'latex');
 set(groot, 'defaultAxesTickLabelInterpreter', 'latex');
 
 % PLOT STATI
-figure('Name', 'Analisi di Robustezza: Stati (MPC Anello Chiuso + Vento)', 'NumberTitle', 'off');
+t_layout_stoc_x = tiledlayout(tabs.stoc_stati, 2, 2, 'Padding', 'compact', 'TileSpacing', 'compact');
 nomi_stati = {'Angolo di Beccheggio ($\theta$) [rad]', 'Velocit\`a di Beccheggio ($q$) [rad/s]', 'Velocit\`a asse X ($U$) [ft/s]', 'Velocit\`a asse Z ($W$) [ft/s]'};
 for i=1:4
-    subplot(2,2,i);
+    nexttile(t_layout_stoc_x);
     stairs(t_plot, storia_x_nom(i,:), '--k', 'LineWidth', 1.5); hold on;
     stairs(t_plot, storia_x_stoc(i,:), 'b', 'LineWidth', 1.2);
     title(nomi_stati{i}); xlabel('Tempo [s]'); 
@@ -49,12 +51,19 @@ for i=1:4
 end
 
 % PLOT INGRESSI ATTUATORI (Il vero lavoro del feedback!)
-figure('Name', 'Sforzo Computazionale e Fisico dell''MPC in Anello Chiuso', 'NumberTitle', 'off');
-nomi_ingressi = {'Motore / Thrust ($T$)', 'Elevatore ($\delta_e$)', 'Flaperon ($\delta_f$)'};
+t_layout_stoc_u = tiledlayout(tabs.stoc_attuatori, 3, 1, 'Padding', 'compact', 'TileSpacing', 'compact');
+nomi_ingressi = {'Motore / Thrust ($T$) [lbf]', 'Elevatore ($\delta_e$) [deg]', 'Flaperon ($\delta_f$) [deg]'};
+
+% Copia temporanea per conversioni in gradi
+u_nom_plot = storia_u_nom;
+u_stoc_plot = storia_u_stoc;
+u_nom_plot(2:3, :) = rad2deg(u_nom_plot(2:3, :));
+u_stoc_plot(2:3, :) = rad2deg(u_stoc_plot(2:3, :));
+
 for i=1:3
-    subplot(3,1,i);
-    stairs(t_plot_u, storia_u_nom(i,:), '--k', 'LineWidth', 1.5); hold on;
-    stairs(t_plot_u, storia_u_stoc(i,:), 'r', 'LineWidth', 1.2);
+    nexttile(t_layout_stoc_u);
+    stairs(t_plot_u, u_nom_plot(i,:), '--k', 'LineWidth', 1.5); hold on;
+    stairs(t_plot_u, u_stoc_plot(i,:), 'r', 'LineWidth', 1.2);
     title(['Azione Attuatore: ', nomi_ingressi{i}]); xlabel('Tempo [s]'); ylabel('Comando');
     legend('Azione Nominale Programmata', 'Azione Correttiva (Feedback Reale)', 'Location', 'Best');
     grid on;
@@ -62,21 +71,25 @@ end
 
 %% 5. Overlay della Traiettoria sul Control Invariant Set (CIS)
 disp('Generazione di un nuovo grafico 3D del CIS per la traiettoria stocastica...');
-% Chiamiamo la funzione per disegnare i poliedri da zero su una nuova figura.
+% Cancelliamo il contenuto del tab CIS esistente (creato da MPC.m) e lo ridisegniamo
+delete(allchild(tabs.cis_3d));
 % In questo modo evitiamo completamente i bug del motore grafico OpenGL di MATLAB 
 % ("Could not find node in peer tree") che si verificano cercando di modificare 
 % figure complesse rimaste in background.
-plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max);
+plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max, tabs.cis_3d);
+
+% Recuperiamo l'oggetto axes (il grafico vero e proprio) dentro la scheda CIS
+ax_cis = findobj(tabs.cis_3d, 'Type', 'axes');
 
 % La funzione plot_cis lascia la figura attiva con "hold on"
 % 1. Tracciamo la traiettoria Nominale (Blu) per confronto
-plot3(storia_x_nom(3,:), storia_x_nom(4,:), storia_x_nom(2,:), '-b', 'LineWidth', 2.5, 'DisplayName', 'Traiettoria Nominale');
+plot3(ax_cis, storia_x_nom(3,:), storia_x_nom(4,:), storia_x_nom(2,:), '-b', 'LineWidth', 2.5, 'DisplayName', 'Traiettoria Nominale');
 
 % 2. Tracciamo la traiettoria perturbata (Rossa)
-plot3(storia_x_stoc(3,:), storia_x_stoc(4,:), storia_x_stoc(2,:), 'r', 'LineWidth', 1.5, 'DisplayName', 'Traiettoria Stocastica (Closed-Loop)');
+plot3(ax_cis, storia_x_stoc(3,:), storia_x_stoc(4,:), storia_x_stoc(2,:), 'r', 'LineWidth', 1.5, 'DisplayName', 'Traiettoria Stocastica (Closed-Loop)');
 
 % 3. Punto di Arrivo finale della simulazione perturbata
-plot3(storia_x_stoc(3,end), storia_x_stoc(4,end), storia_x_stoc(2,end), 'rp', 'MarkerSize', 15, 'MarkerFaceColor', 'r', 'DisplayName', 'Arrivo Stocastico');
+plot3(ax_cis, storia_x_stoc(3,end), storia_x_stoc(4,end), storia_x_stoc(2,end), 'rp', 'MarkerSize', 15, 'MarkerFaceColor', 'r', 'DisplayName', 'Arrivo Stocastico');
 
 % Forza l'aggiornamento grafico sicuro
 drawnow; 

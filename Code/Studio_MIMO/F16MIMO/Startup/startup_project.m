@@ -19,7 +19,7 @@ function startup_project()
     for i = 1:length(cartelle)
         path_cartella = fullfile(pwd, cartelle{i});
         if exist(path_cartella, 'dir')
-            addpath(path_cartella);
+            addpath(path_cartella, '-begin');
         end
     end
     disp('Path di progetto aggiornato con successo. Tutte le funzioni sono pronte.');

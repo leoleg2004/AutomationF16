@@ -5,7 +5,15 @@
 % =========================================================================
 
 % Inizializzazione Path
+% Aggiungiamo prima la cartella locale Startup in cima al path per evitare
+% conflitti con startup_project di altri progetti (es. Tre Camere)
+addpath(fullfile(pwd, 'Startup'), '-begin');
 startup_project();
+
+% =========================================================================
+% TABS AUTOMATICI: Inserisce tutti i grafici in un unico pannello a schede
+% =========================================================================
+set(0, 'DefaultFigureWindowStyle', 'docked');
 
 %% 1. Definizione del Sistema (TEMPO CONTINUO)
 nx = 4; % Stati: [theta,q,U,W]'
@@ -59,7 +67,9 @@ N = 40; % Orizzonte predittivo
 mpc_prob = setup_mpc(N, nx, nu, A_long_ds, B_ctrl_ds, Q, P, R, U_min, U_max, Gx, gx, G_inf, g_inf, x_ref, u_ref);
 
 %% 4b. Plot 3D dei Set Invarianti e Feasible Set N-Step
-plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max);
+% Inizializza Dashboard
+tabs = crea_dashboard_mpc();
+plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max, tabs.cis_3d);
 
 %% 6. Simulazione MPC Completa 
 disp('--- Avvio Ottimizzazione e Simulazione MPC ---');
@@ -84,8 +94,7 @@ disp(abs(storia_x(:,end) - x_ref));
 disp('---------------------------------------------------');
 
 %% 7. Grafici 
-plot_risultati(t_sim, storia_x, storia_u, U_min, U_max, x_ref, u_ref);
-
+plot_risultati(t_sim, storia_x, storia_u, U_min, U_max, x_ref, u_ref, tabs.stati, tabs.attuatori);
 
 %% 8. Plot Funzionale di Costo MPC 3D
-plot_mpc_cost_3d(mpc_prob, A_long_ds, dU_max, storia_x, storia_costo, Ts);
+plot_mpc_cost_3d(mpc_prob, A_long_ds, dU_max, storia_x, storia_costo, Ts, tabs.cost_3d);
