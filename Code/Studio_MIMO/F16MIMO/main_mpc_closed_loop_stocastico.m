@@ -17,8 +17,8 @@ storia_u_nom = storia_u;
 % 2. Setup della Tempesta (Matrice di Diffusione G)
 disp('Configurazione della tempesta di vento (Moto Browniano)...');
 Bwind = B_long(:, end-1:end); 
-sigma_vento_1 = 0.20; 
-sigma_vento_2 = 0.80; 
+sigma_vento_1 = 0.50; 
+sigma_vento_2 = 0.50; 
 G = Bwind * diag([sigma_vento_1, sigma_vento_2]);
 
 % 3. Simulazione Anello Chiuso Stocastico
@@ -42,12 +42,12 @@ set(groot, 'defaultAxesTickLabelInterpreter', 'latex');
 t_layout_stoc_x = tiledlayout(tabs.stoc_stati, 2, 2, 'Padding', 'compact', 'TileSpacing', 'compact');
 nomi_stati = {'Angolo di Beccheggio ($\theta$) [rad]', 'Velocit\`a di Beccheggio ($q$) [rad/s]', 'Velocit\`a asse X ($U$) [ft/s]', 'Velocit\`a asse Z ($W$) [ft/s]'};
 for i=1:4
-    nexttile(t_layout_stoc_x);
-    stairs(t_plot, storia_x_nom(i,:), '--k', 'LineWidth', 1.5); hold on;
-    stairs(t_plot, storia_x_stoc(i,:), 'b', 'LineWidth', 1.2);
-    title(nomi_stati{i}); xlabel('Tempo [s]'); 
-    legend('Nominale (Senza Vento)', 'Anello Chiuso (Col Vento)', 'Location', 'Best');
-    grid on;
+    ax_stati = nexttile(t_layout_stoc_x);
+    stairs(ax_stati, t_plot, storia_x_nom(i,:), '--k', 'LineWidth', 1.5); hold(ax_stati, 'on');
+    stairs(ax_stati, t_plot, storia_x_stoc(i,:), 'b', 'LineWidth', 1.2);
+    title(ax_stati, nomi_stati{i}); xlabel(ax_stati, 'Tempo [s]'); 
+    legend(ax_stati, 'Nominale (Senza Vento)', 'Anello Chiuso (Col Vento)', 'Location', 'Best');
+    grid(ax_stati, 'on');
 end
 
 % PLOT INGRESSI ATTUATORI (Il vero lavoro del feedback!)
@@ -57,16 +57,16 @@ nomi_ingressi = {'Motore / Thrust ($T$) [lbf]', 'Elevatore ($\delta_e$) [deg]', 
 % Copia temporanea per conversioni in gradi
 u_nom_plot = storia_u_nom;
 u_stoc_plot = storia_u_stoc;
-u_nom_plot(2:3, :) = rad2deg(u_nom_plot(2:3, :));
-u_stoc_plot(2:3, :) = rad2deg(u_stoc_plot(2:3, :));
+u_nom_plot(2:3, :) = u_nom_plot(2:3, :) * (180/pi);
+u_stoc_plot(2:3, :) = u_stoc_plot(2:3, :) * (180/pi);
 
 for i=1:3
-    nexttile(t_layout_stoc_u);
-    stairs(t_plot_u, u_nom_plot(i,:), '--k', 'LineWidth', 1.5); hold on;
-    stairs(t_plot_u, u_stoc_plot(i,:), 'r', 'LineWidth', 1.2);
-    title(['Azione Attuatore: ', nomi_ingressi{i}]); xlabel('Tempo [s]'); ylabel('Comando');
-    legend('Azione Nominale Programmata', 'Azione Correttiva (Feedback Reale)', 'Location', 'Best');
-    grid on;
+    ax_u = nexttile(t_layout_stoc_u);
+    stairs(ax_u, t_plot_u, u_nom_plot(i,:), '--k', 'LineWidth', 1.5); hold(ax_u, 'on');
+    stairs(ax_u, t_plot_u, u_stoc_plot(i,:), 'r', 'LineWidth', 1.2);
+    title(ax_u, ['Azione Attuatore: ', nomi_ingressi{i}]); xlabel(ax_u, 'Tempo [s]'); ylabel(ax_u, 'Comando');
+    legend(ax_u, 'Azione Nominale Programmata', 'Azione Correttiva (Feedback Reale)', 'Location', 'Best');
+    grid(ax_u, 'on');
 end
 
 %% 5. Overlay della Traiettoria sul Control Invariant Set (CIS)
