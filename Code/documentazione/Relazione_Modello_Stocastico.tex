@@ -1,0 +1,185 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{a4paper, margin=2.5cm}
+
+\title{\textbf{Modellazione Stocastica del Controllo Longitudinale dell'F-16: \\Dal Moto Browniano all'Automazione}}
+\author{Integrazione dell'Analisi Stocastica e Lemma di Itô}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Questo documento illustra nel dettaglio l'applicazione della teoria dei processi stocastici al modello matematico della dinamica longitudinale di un velivolo F-16. L'obiettivo principale è colmare il divario tra i modelli deterministici come quelli impiegati nel controllo predittivo MPC e l'imprevedibilità nel mondo reale, introducendo l'uso del moto Browniano come modello stocastico per modellare le turbolenze atmosferiche. Viene inoltre formalizzato e validato matematicamente il Lemma di Itô sull'energia cinetica del sistema che partendo dal vettore X=[$\theta$,q,U,W] viene definita una nuova variabile che identifica l'energia cinetica del sistema:
+\begin{equation}
+	V^2 = U^2 + W^2
+	\label{eq:velocita_totale}
+\end{equation}
+su cui poi si userà il  Lemma di Itô per ottenere attraverso la nuova varibaile la dinamica del sistema attraverso il modello stocastico scelto.
+\end{abstract}
+
+\section{Introduzione e Motivazione}
+Nell'ingegneria dell'automazione e del controllo, i modelli deterministici forniscono una solida base per la sintesi dei controllori come LQR e MPC. Tuttavia, l'ambiente in cui opera un velivolo reale è soggetto a disturbi esterni continui. Per analizzare la robustezza di un controllore Model Predictive Control (MPC), è necessario introdurre un modello stocastico. Sebbene questo approccio tragga ispirazione da concetti celebri della finanza quantitativa (come il \textit{Moto Browniano Geometrico} usato per il pricing delle opzioni), la dinamica aerospaziale richiede un rigore differente. In questo lavoro è stata formalizzata un'\textbf{Equazione Differenziale Stocastica Lineare} (collegabile ai processi di Ornstein-Uhlenbeck). A differenza del Moto Browniano Geometrico in cui il rumore scala proporzionalmente allo stato, nel nostro modello il disturbo agisce come un processo di Wiener multi-dimensionale additivo ($G \, dW$), la cui intensità è dettata esclusivamente dalle matrici aerodinamiche, garantendo una rappresentazione fisicamente coerente dell'impatto del vento sul velivolo.
+\clearpage
+\section{Il Modello Matematico Stocastico}
+
+\subsection{Dalla Dinamica Deterministica all'SDE}
+La dinamica longitudinale linearizzata deterministica di un velivolo è descritta dall'equazione differenziale matriciale lineare:
+\begin{equation}
+    \dot{x} = A x + B_{long} u
+\end{equation}
+Moltiplicando l'equazione per l'intervallo infinitesimo di tempo $dt$, si ottiene la forma ai differenziali standard:
+\begin{equation}
+    dx = (A x + B_{long} u) dt
+\end{equation}
+
+Per modellare la turbolenza atmosferica in maniera matematicamente robusta, introduciamo un termine stocastico proporzionale all'incremento di un processo di Wiener multi-dimensionale $dW$. Si ottiene così un'Equazione Differenziale Stocastica (SDE):
+\begin{equation}
+    dx = (A x + B_{ctrl} u) dt + G dW
+\end{equation}
+
+\subsection{Composizione delle Matrici e Dati da Galleria del Vento}
+Il vettore di stato considerato per l'analisi longitudinale dell'F-16 è composto da quattro variabili fisiche fondamentali in Body Axes:
+\begin{equation}
+    x = \begin{bmatrix} \theta \\ q \\ U \\ W \end{bmatrix}
+\end{equation}
+dove $\theta$ è l'angolo di beccheggio, $q$ la velocità di beccheggio, $U$ la perturbazione della velocità sull'asse $X$, e $W$ la perturbazione della velocità sull'asse $Z$. L'angolo d'attacco può essere ricavato approssimativamente tramite la relazione trigonometrica $\alpha \approx \arctan(W/U)$. La matrice originale degli ingressi $B_{long}$ (di dimensioni $4 \times 5$) è stata strategicamente partizionata per separare gli attuatori pilotabili dai disturbi ambientali subiti passivamente:
+\begin{itemize}
+    \item $B_{ctrl} \in \mathbb{R}^{4 \times 3}$: Matrice che mappa l'azione degli attuatori di controllo (es. elevatore, flaperon).
+    \item $B_{wind} \in \mathbb{R}^{4 \times 2}$: Matrice che mappa l'effetto diretto e accoppiato delle raffiche di vento sugli stati dinamici.
+\end{itemize}
+
+Per garantire il massimo realismo fisico, la matrice di diffusione (o matrice di rumore) $G$ non è stata costruita assegnando casualmente delle varianze ai sensori. Al contrario, il modello stocastico impiega direttamente i coefficienti aerodinamici sperimentali misurati tramite simulazioni in \textbf{galleria del vento}. 
+
+I dati sperimentali della galleria del vento, che descrivono fisicamente come una perturbazione esterna altera le forze e i momenti sul velivolo, risiedono nelle ultime due colonne della matrice originale $B_{long}$. Estrapolando queste colonne nella sottomatrice $B_{wind}$, la matrice di diffusione viene costruita come:
+\begin{equation}
+    G = B_{wind} \cdot \begin{bmatrix} \sigma_{vento,1} & 0 \\ 0 & \sigma_{vento,2} \end{bmatrix}
+\end{equation}
+Questo approccio garantisce una perfetta aderenza alla realtà fisica: l'algoritmo stocastico genera un rumore matematico normalizzato a media nulla (l'incremento di Wiener $dW$), che viene prima scalato dall'intensità reale della tempesta desiderata in metri al secondo ($\sigma_{vento}$) e, infine, viene proiettato sulle variabili di stato attraverso i filtri aerodinamici esatti della galleria del vento ($B_{wind}$). Pertanto, se i test in galleria stabiliscono che una specifica raffica verticale altera la velocità di beccheggio di una determinata quantità, l'SDE riprodurrà con esattezza matematica quel preciso momento aerodinamico.
+
+\subsection{Estrazione Analitica di $dU$ e $dW$}
+Per procedere all'analisi di metriche non lineari come l'energia cinetica, è fondamentale esplicitare le singole Equazioni Differenziali Stocastiche per le componenti di velocità $U$ e $W$. Partendo dall'equazione matriciale globale $dx = (A x + B_{ctrl} u) dt + G dZ$, ed espandendo il prodotto riga per colonna, andiamo a estrarre esattamente la terza e la quarta riga del sistema (corrispondenti agli stati $U$ e $W$):
+
+\begin{equation}
+    dU = \left( A_{3,1}\theta + A_{3,2}q + A_{3,3}U + A_{3,4}W + \sum_{j=1}^{3} B_{ctrl,3,j} u_j \right) dt + G_{3,1} dZ_1 + G_{3,2} dZ_2
+\end{equation}
+
+\begin{equation}
+    dW = \left( A_{4,1}\theta + A_{4,2}q + A_{4,3}U + A_{4,4}W + \sum_{j=1}^{3} B_{ctrl,4,j} u_j \right) dt + G_{4,1} dZ_1 + G_{4,2} dZ_2
+\end{equation}
+
+Da queste espressioni analitiche si evince chiaramente come la dinamica della velocità sia accoppiata a tutti gli altri stati del velivolo (tramite i coefficienti aerodinamici della riga $A_{i,j}$), dipenda dagli ingressi di controllo dell'MPC (tramite $B_{ctrl}$), e sia perturbata stocasticamente dalle componenti del vento. I termini $G_{3,j}$ e $G_{4,j}$ rappresentano esattamente il ponte di collegamento tra i dati della galleria del vento e l'intensità del rumore che andrà a definire le varianze $\sigma_U^2$ e $\sigma_W^2$.
+
+\section{Simulazione Numerica e Degradazione in Anello Aperto}
+L'Equazione Differenziale Stocastica è stata risolta numericamente impiegando il metodo di \textbf{Eulero-Maruyama}:
+\begin{equation}
+    x_{k+1} = x_k + (A x_k + B_{ctrl} u_k) \Delta t + G \sqrt{\Delta t} \, z_k
+\end{equation}
+dove $z_k \sim \mathcal{N}(0, I)$ è un vettore di variabili aleatorie con distribuzione normale standard. L'assoluto rigore matematico di questo schema numerico risiede nel fattore di scalamento $\sqrt{\Delta t}$: a differenza della semplice aggiunta di rumore bianco, il metodo di Eulero-Maruyama garantisce che la varianza del disturbo stocastico cresca linearmente nel tempo, rispettando fedelmente le proprietà fondamentali del Moto Browniano di Wiener.
+
+\subsection{Condizioni Iniziali della Simulazione}
+Per testare la robustezza e la capacità di recupero dell'algoritmo di controllo, tutte le simulazioni numeriche (sia ad anello aperto che ad anello chiuso) partono da una condizione iniziale perturbata rispetto al punto di equilibrio ideale (origine). Il vettore di stato iniziale $x_0$ imposto all'aereo è il seguente:
+\begin{equation}
+    x_0 = \begin{bmatrix} \theta_0 \\ q_0 \\ U_0 \\ W_0 \end{bmatrix} = \begin{bmatrix} 5^\circ \\ 5^\circ/\text{s} \\ 2 \, \text{ft/s} \\ 30 \, \text{ft/s} \end{bmatrix}
+\end{equation}
+Per coerenza matematica con il modello di stato, i valori angolari (gradi e gradi al secondo) sono stati convertiti in radianti all'interno dello script MATLAB (\textit{deg2rad}). Dal punto di vista fisico, questa configurazione iniziale posiziona l'F-16 in un assetto leggermente cabrato e in rotazione, accoppiato a una forte componente di velocità verticale anomala ($W_0 = 30$ ft/s). L'obiettivo del controllore è riportare asintoticamente questo stato sbilanciato verso lo zero.
+
+\subsection{Analisi della Degradazione in Anello Aperto}
+Iniettando nel simulatore stocastico la sequenza di controllo ottimale pre-calcolata ad anello aperto (open-loop) dal controllore MPC deterministico, si è osservata visivamente la netta divergenza degli stati. Dato che il modello longitudinale di un caccia moderno come l'F-16 è tipicamente instabile (polo a parte reale positiva), le perturbazioni casuali introdotte da $G dW$ "spingono" l'aereo fuori dalla traiettoria nominale deterministica. Senza un \textit{Feedback Loop} in grado di misurare live lo stato perturbato e far ricalcolare all'MPC la correzione appropriata, il sistema diverge in pochi secondi. Questa analisi giustifica matematicamente e fisicamente la stretta necessità di implementare l'MPC in anello chiuso.
+
+Come si evince dai grafici di simulazione (Figura \ref{fig:degradazione_open_loop}), viene proposto un confronto visivo diretto: la traiettoria tratteggiata nera rappresenta l'evoluzione nominale ideale delle variabili di stato (ovvero il comportamento pianificato dall'MPC in totale assenza di disturbi), mentre le linee continue colorate descrivono l'evoluzione stocastica perturbata. Il divario che si crea rapidamente tra le due curve è la dimostrazione grafica della divergenza.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{immagini/VarStato.png}
+    \caption{Confronto diretto sulle variabili di stato: traiettoria nominale MPC senza vento (tratteggiata nera) vs degradazione stocastica reale (linea colorata) a causa della turbolenza in anello aperto.}
+    \label{fig:degradazione_open_loop}
+\end{figure}
+
+\section{Energia Cinetica e Validazione del Lemma di Itô}
+La perfetta similitudine tra le equazioni della finanza quantitativa (es. derivazione della formula di Black-Scholes) e la dinamica aerospaziale emerge clamorosamente nell'analisi di metriche non lineari. Consideriamo una funzione proporzionale all'energia cinetica del velivolo, basata sul quadrato del modulo della velocità:
+\begin{equation}
+    V^2 = U^2 + W^2
+\end{equation}
+
+Per calcolare la dinamica stocastica $d(V^2)$, l'algebra differenziale classica di Newton-Leibniz fallisce. Poiché $U$ e $W$ sono governate da processi stocastici, la natura convessa della funzione quadratica richiede l'applicazione del \textbf{Lemma di Itô}. 
+
+Definendo $\sigma_U^2$ e $\sigma_W^2$ come le varianze associate agli stati di velocità (ottenute dalle rispettive righe della matrice di diffusione $G$), applichiamo l'operatore di Itô alla funzione bivariata $f(U,W) = U^2 + W^2$:
+\begin{equation}
+    d(V^2) = \frac{\partial f}{\partial U} dU + \frac{\partial f}{\partial W} dW + \frac{1}{2}\frac{\partial^2 f}{\partial U^2}(dU)^2 + \frac{1}{2}\frac{\partial^2 f}{\partial W^2}(dW)^2
+\end{equation}
+
+Calcolando analiticamente le derivate:
+\begin{itemize}
+    \item $\frac{\partial f}{\partial U} = 2U$, \quad $\frac{\partial^2 f}{\partial U^2} = 2$
+    \item $\frac{\partial f}{\partial W} = 2W$, \quad $\frac{\partial^2 f}{\partial W^2} = 2$
+\end{itemize}
+
+Sfruttando le regole del calcolo stocastico in cui $dW^2 = dt$, si ricava che $(dU)^2 = \sigma_U^2 dt$ e $(dW)^2 = \sigma_W^2 dt$. Sostituendo questi valori si ottiene l'equazione esatta:
+\begin{equation}
+    d(V^2) = 2U dU + 2W dW + (\sigma_U^2 + \sigma_W^2) dt
+\end{equation}
+
+Il termine addizionale $(\sigma_U^2 + \sigma_W^2) dt$ rappresenta la cosiddetta \textbf{\textit{Tassa di Itô}}. 
+
+Questo risultato teorico è stato implementato e validato con successo nello script MATLAB di simulazione. Per comprovare sperimentalmente questa tesi, il simulatore calcola e sovrappone in un unico grafico (Figura \ref{fig:validazione_ito}) tre grandezze fondamentali:
+\begin{itemize}
+    \item \textbf{Energia Nominale (Tratteggiata Nera)}: È l'energia cinetica proporzionale definita come $V_{nom}^2 = U_{nom}^2 + W_{nom}^2$, calcolata prelevando gli stati dalla simulazione deterministica del controllore MPC. Rappresenta l'evoluzione energetica ideale pianificata in totale assenza di vento.
+    \item \textbf{Energia Reale Algebrica (Continua Blu)}: Rappresenta l'energia effettiva calcolata istante per istante dalla simulazione perturbata, eseguendo algebricamente la somma dei quadrati delle velocità stocastiche ricavate ($V_{reale}^2 = U_{stoc}^2 + W_{stoc}^2$).
+    \item \textbf{Energia Integrata di Itô (Tratteggiata Rossa)}: Rappresenta l'evoluzione di $V^2$ calcolata partendo da zero e integrando numericamente, istante per istante, l'Equazione Differenziale Stocastica completa che include esplicitamente la "Tassa di Itô". 
+\end{itemize}
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.9\textwidth]{immagini/Energia.png}
+	
+	\caption{Validazione numerica del Lemma di Itô sull'energia cinetica: dal confronto si nota come l'energia nominale senza vento sia inferiore all'energia stocastica, a dimostrazione visiva della presenza della "Tassa di Itô" aggiuntiva.}
+	\label{fig:validazione_ito}
+\end{figure} 
+L'osservazione incrociata di queste tre curve convalida l'impianto teorico portando alla luce due conclusioni fisiche e matematiche capitali:
+\begin{enumerate}
+    \item \textbf{La matematica - Validazione del Lemma di Itô}: La curva reale algebrica (blu) e la curva integrata di Itô (rossa) si sovrappongono in modo perfetto e assoluto. Se l'equazione differenziale per l'energia fosse stata sviluppata limitandosi alle classiche regole del calcolo di Newton-Leibniz (omettendo cioè il termine di varianza $\sigma^2 dt$), l'integrazione numerica si sarebbe immediatamente distaccata dal valore reale. Questo dimostra che in ambienti stocastici, il calcolo classico fallisce ed è imperativo avvalersi degli strumenti della finanza quantitativa.
+    \item \textbf{La fisica - Il Drift Energetico}: Paragonando l'energia reale perturbata (blu/rossa) con quella nominale (nera), emerge visivamente che la turbolenza non genera una semplice oscillazione casuale a media nulla intorno al comportamento ideale. Al contrario, l'energia stocastica si distacca inesorabilmente tendendo verso l'alto (creando un vero e proprio \textit{drift}). Essendo l'energia cinetica una funzione convessa (un paraboloide generato dal quadrato della velocità), l'impatto caotico del vento "pompa" fisicamente un surplus di energia netta nel velivolo. La \textit{Tassa di Itô} rappresenta esattamente la quantificazione matematica di questo apporto energetico addizionale fornito dall'imprevedibilità ambientale.
+\end{enumerate}
+
+
+
+\section{ MPC in Anello Chiuso Stocastico}
+Dopo aver dimostrato matematicamente e visivamente il crollo del sistema in anello aperto a causa della combinazione tra instabilità intrinseca del velivolo e la varianza del vento (Figura \ref{fig:degradazione_open_loop}), il modello stocastico è stato integrato direttamente all'interno dell'algoritmo di ottimizzazione dell'MPC per simulare il controllo in \textbf{Anello Chiuso} (\textit{Closed-Loop}).
+
+In questo scenario, ad ogni passo temporale l'equazione di aggiornamento della cinematica è stata perturbata internamente dal Moto Browniano:
+\begin{equation}
+    x_{k+1} = A_{ds} x_k + B_{ds} u_k + G \sqrt{T_s} \, z_k
+\end{equation}
+Di conseguenza, il risolutore quadratico si è trovato costretto a misurare live uno stato continuamente spostato dal vento, dovendo ricalcolare ad ogni istante un'azione correttiva asimmetrica per annullare l'errore in tempo reale.
+
+I risultati di questa simulazione rappresentano la validazione finale della robustezza del controllore predittivo (Figure \ref{fig:stati_closed_loop} e \ref{fig:attuatori_closed_loop}):
+\begin{itemize}
+    \item \textbf{Variabili di Stato}: Osservando le traiettorie cinematiche, l'effetto della turbolenza è tangibile sotto forma di un "tremolio" stocastico continuo. Tuttavia, a differenza dello scenario ad anello aperto, l'aereo non devia e non precipita. Il controllore riesce a trattenere le variabili di stato (in particolare l'angolo di beccheggio $\theta$) solidamente ancorate attorno alla traiettoria nominale pianificata, vincendo l'instabilità.
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.75\textwidth]{immagini/VarStatoClosed.png}
+        \caption{Variabili di stato in Anello Chiuso Stocastico: il controllore MPC mantiene l'aereo stabile sulla traiettoria nominale (nera) annullando le derive indotte dalla turbolenza (blu).}
+        \label{fig:stati_closed_loop}
+    \end{figure}
+
+    \item \textbf{Sforzo Computazionale e Fisico degli Attuatori}: L'esame dell'azione di controllo $u_k$ svela il vero lavoro del feedback. Mentre l'azione nominale pre-calcolata procede fluida e regolare, il comando reale inviato all'aereo durante la tempesta risulta frenetico, reattivo e compensativo. L'MPC comanda repentine variazioni agli elevatori e ai flaperon per contrapporsi dinamicamente ad ogni singola raffica.
+    \begin{figure}[H]
+    	\centering
+    	\includegraphics[width=0.75\textwidth]{immagini/AttClosedLoop.png}
+    	\caption{Sforzo degli attuatori in Anello Chiuso: confronto tra l'azione di controllo ideale (tratteggiata nera) e la reazione del calcolatore in tempo reale (linea rossa) per contrastare il vento stocastico.}
+    	\label{fig:attuatori_closed_loop}
+    \end{figure}
+\end{itemize}
+
+
+\section{Conclusioni}
+La formulazione stocastica sopra descritta colma in modo elegante il divario tra la fisica aerodinamica, la teoria dei controlli avanzata e la matematica finanziaria. Attraverso lo strumento delle SDE e del Lemma di Itô, è stato possibile dimostrare sperimentalmente il fallimento dell'approccio deterministico open-loop su sistemi instabili perturbati, evidenziando inoltre l'impatto "subdolo" della varianza sui calcoli di metriche energetiche, proprio come avviene per gli asset finanziari sotto l'influsso della volatilità di mercato.
+
+\end{document}

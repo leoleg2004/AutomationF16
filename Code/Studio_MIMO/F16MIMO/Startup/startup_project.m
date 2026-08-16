@@ -14,7 +14,7 @@ function startup_project()
     % garantire il funzionamento di tutti gli script e modelli.
     cartelle = {'funzioni_mpc', 'funzioni_lqr', 'Modello_Matematico', ...
                 'Modelli_Simulink', 'Dati_Mat', 'Analisi_di_Sistema', ...
-                'Studi_Avanzati_Invarianza', 'Simulazioni_Simulink', 'Utility_Extra', 'Startup'};
+                'Studi_Avanzati_Invarianza', 'Simulazioni_Simulink', 'Utility_Extra', 'Startup', 'FlightGear', 'FlightGear/funzioni'};
     
     for i = 1:length(cartelle)
         path_cartella = fullfile(pwd, cartelle{i});

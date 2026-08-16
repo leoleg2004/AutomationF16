@@ -12,22 +12,25 @@
 function [K, P, Q, R, A_cl] = progetta_LQR_discreto(A, B)
     % =====================================================================
     % Calcolo pesi LQR (Regola di Bryson) coerenti con il modello F-16
-    % Ordine stati: [theta (rad); q (rad/s); U (ft/s); W (ft/s)]
-    % Ordine input: [Thrust (lbs); Elevator (rad); LEF (rad)]
+    % Ordine stati: [theta (rad); q (rad/s); U (m/s); W (m/s)]
+    % Ordine input: [Thrust (N); Elevator (rad); LEF (rad)]
     % =====================================================================
     
+    ft2m = 0.3048;
+    lbf2N = 4.44822;
+    
     % Massimi scostamenti tollerabili per gli stati (Bryson's rule)
-    max_theta = deg2rad(15); % 15 gradi max tollerati per il pitch
-    max_q     = deg2rad(30); % 30 deg/s max tollerati per il pitch rate
-    max_U     = 30;          % 30 ft/s max per la velocità X
-    max_W     = 20;          % 20 ft/s max per la velocità Z (incide su alpha)
+    max_theta = 15 * pi/180; % 15 gradi max tollerati per il pitch
+    max_q     = 30 * pi/180; % 30 deg/s max tollerati per il pitch rate
+    max_U     = 30 * ft2m;   % 30 ft/s convertiti in m/s max per la velocità X
+    max_W     = 20 * ft2m;   % 20 ft/s convertiti in m/s max per la velocità Z
     
     Q = diag([1/max_theta^2, 1/max_q^2, 1/max_U^2, 1/max_W^2]);
     
     % Massimi scostamenti tollerabili per gli attuatori
-    max_thrust = 5000;       % 5000 lbs variazione manetta
-    max_elev   = deg2rad(25);% 25 gradi max deflessione equilibratore
-    max_lef    = deg2rad(25);% 25 gradi max deflessione LEF
+    max_thrust = 5000 * lbf2N;   % 5000 lbs convertite in Newton
+    max_elev   = 25 * pi/180;    % 25 gradi max deflessione equilibratore
+    max_lef    = 25 * pi/180;    % 25 gradi max deflessione LEF
     
     R = diag([1/max_thrust^2, 1/max_elev^2, 1/max_lef^2]);
     

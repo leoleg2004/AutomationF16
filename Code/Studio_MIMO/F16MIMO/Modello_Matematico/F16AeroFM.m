@@ -160,7 +160,12 @@ Mb = [L,M,N];
 FM = [Fx,Fy,Fz,L,M,N];
 
 if isnan(norm(FM))
-    keyboard
+    fprintf('\n--- CRASH AERODINAMICO ---\n');
+    fprintf('Vt = %f, alpha = %f, beta = %f\n', Vt, alpha, beta);
+    fprintf('p = %f, q = %f, r = %f\n', p, q, r);
+    fprintf('ele = %f, ail = %f, rud = %f, lef = %f\n', ele, ail, rud, lef);
+    fprintf('qbar = %f\n', qbar);
+    error('Forze aerodinamiche diventate NaN! Probabilmente Mach o Alpha sono andati fuori scala nei grafici.');
 end
 
 end

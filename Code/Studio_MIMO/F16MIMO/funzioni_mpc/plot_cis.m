@@ -24,12 +24,12 @@ function plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max, parent_tab)
     title(ax, ['Poliedro $\mathcal{X}_f$ in 3D (Fetta $\theta = ', num2str(x_ref(1)), '$)'], 'Interpreter', 'latex', 'FontSize', 14);
     
     % Assi aggiornati al tuo vettore di stato: [theta, q, U, W]
-    xlabel('u [ft/s]'); ylabel('w [ft/s]'); zlabel('q [rad/s]');
+    xlabel('u [m/s]'); ylabel('w [m/s]'); zlabel('q [rad/s]');
     
-    % Griglia coerente con i tuoi stati (U, W, q)
-    [X_U, X_W, X_q] = meshgrid(linspace(-50, 50, 20), ... % Range per u (Stato 3)
-                               linspace(-50, 50, 20), ... % Range per w (Stato 4)
-                               linspace(-deg2rad(40), deg2rad(40), 20)); % Range per q (Stato 2)
+    % Griglia ad alta risoluzione centrata vicino all'origine per trovare il CIS
+    [X_U, X_W, X_q] = meshgrid(linspace(-30, 30, 40), ... % Range per u (Stato 3)
+                               linspace(-30, 30, 40), ... % Range per w (Stato 4)
+                               linspace(-40 * pi/180, 40 * pi/180, 40)); % Range per q (Stato 2)
     
     X_U_f = X_U(:); X_W_f = X_W(:); X_q_f = X_q(:); 
     
@@ -83,17 +83,33 @@ function plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max, parent_tab)
         b_rate(1:2*nu) = [dU_max + u_previous; dU_max - u_previous];
         b_ineq_tot = [mpc_prob.b_ineq_stat; b_rate];
 
-        f_lin = zeros(n_vars, 1);
-        Validi_N = false(size(X_U_f));
+        % Griglia a bassa risoluzione dedicata SOLO all'N-Step Set per velocizzare linprog
+        [X_U_N, X_W_N, X_q_N] = meshgrid(linspace(-40, 40, 15), ... 
+                                         linspace(-40, 40, 15), ... 
+                                         linspace(-40 * pi/180, 40 * pi/180, 15));
         
-        for i = 1:length(X_U_f)
-            if Validi_inf(i)
-                % Se è già in O_inf, è banalmente in X_N
+        X_U_N_f = X_U_N(:); X_W_N_f = X_W_N(:); X_q_N_f = X_q_N(:); 
+        f_lin = zeros(n_vars, 1);
+        Validi_N = false(size(X_U_N_f));
+        
+        for i = 1:length(X_U_N_f)
+            % Check rapido se è già in O_inf per saltare linprog
+            x0_test = [theta_slice; X_q_N_f(i); X_U_N_f(i); X_W_N_f(i)];
+            
+            is_in_O_inf = true;
+            for j = 1:size(G_inf, 1)
+                if G_inf(j,:) * x0_test > g_inf(j)
+                    is_in_O_inf = false;
+                    break;
+                end
+            end
+            
+            if is_in_O_inf
                 Validi_N(i) = true;
                 continue;
             end
             
-            x0_test = [theta_slice; X_q_f(i); X_U_f(i); X_W_f(i)];
+            % Se non è in O_inf, testa con linprog
             beq = zeros(N*nx, 1);
             beq(1:nx) = A_long_ds * x0_test; 
             
@@ -103,7 +119,7 @@ function plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max, parent_tab)
             end
         end
         
-        PX_N = X_U_f(Validi_N); PY_N = X_W_f(Validi_N); PZ_N = X_q_f(Validi_N);
+        PX_N = X_U_N_f(Validi_N); PY_N = X_W_N_f(Validi_N); PZ_N = X_q_N_f(Validi_N);
         if length(PX_N) > 4
             K_hull_N = convhull(PX_N, PY_N, PZ_N);
             h_N = trisurf(K_hull_N, PX_N, PY_N, PZ_N, 'Parent', ax, 'FaceColor', 'y', 'FaceAlpha', 0.2, 'EdgeColor', 'y', 'EdgeAlpha', 0.1);

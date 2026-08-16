@@ -27,21 +27,21 @@ function plot_risultati(t_sim, storia_x, storia_u, U_min, U_max, x_ref, u_ref, t
     
     nexttile(t_layout_x); plot(0:t_sim, storia_x(1,:), '-b', 'LineWidth', 1.5); hold on; yline(x_ref(1), 'r--', 'LineWidth', 1.2); title('Pitch Angle (\theta) [rad]'); grid on; 
     nexttile(t_layout_x); plot(0:t_sim, storia_x(2,:), '-r', 'LineWidth', 1.5); hold on; yline(x_ref(2), 'r--', 'LineWidth', 1.2); title('Pitch Rate (q) [rad/s]'); grid on; 
-    nexttile(t_layout_x); plot(0:t_sim, storia_x(3,:), '-m', 'LineWidth', 1.5); hold on; yline(x_ref(3), 'r--', 'LineWidth', 1.2); title('Velocità Forward (u) [ft/s]'); grid on; 
-    nexttile(t_layout_x); plot(0:t_sim, storia_x(4,:), '-c', 'LineWidth', 1.5); hold on; yline(x_ref(4), 'r--', 'LineWidth', 1.2); title('Velocità Verticale (w) [ft/s]'); grid on;
+    nexttile(t_layout_x); plot(0:t_sim, storia_x(3,:), '-m', 'LineWidth', 1.5); hold on; yline(x_ref(3), 'r--', 'LineWidth', 1.2); title('Velocità Forward (u) [m/s]'); grid on; 
+    nexttile(t_layout_x); plot(0:t_sim, storia_x(4,:), '-c', 'LineWidth', 1.5); hold on; yline(x_ref(4), 'r--', 'LineWidth', 1.2); title('Velocità Verticale (w) [m/s]'); grid on;
     lgd = legend({'Traiettoria', 'Target (x_{ref})'}, 'Orientation', 'horizontal');
     lgd.Layout.Tile = 'north';
 
     t_layout_u = tiledlayout(tab_attuatori, 3, 1, 'Padding', 'compact', 'TileSpacing', 'compact');
     
     nexttile(t_layout_u); stairs(0:t_sim-1, storia_u(1,:), '-g', 'LineWidth', 1.5); hold on;
-    yline(U_max(1), 'k--'); yline(U_min(1), 'k--'); yline(u_ref(1), 'r--', 'LineWidth', 1.2); title(' Spinta [lbf]'); grid on; ylim([U_min(1)-2000, U_max(1)+2000]);
+    yline(U_max(1), 'k--'); yline(U_min(1), 'k--'); yline(u_ref(1), 'r--', 'LineWidth', 1.2); title(' Spinta [N]'); grid on;
     
-    nexttile(t_layout_u); stairs(0:t_sim-1, rad2deg(storia_u(2,:)), '-g', 'LineWidth', 1.5); hold on;
-    yline(rad2deg(U_max(2)), 'k--'); yline(rad2deg(U_min(2)), 'k--'); yline(rad2deg(u_ref(2)), 'r--', 'LineWidth', 1.2);
-    title(' Elevatore [deg]'); grid on; ylim([rad2deg(U_min(2))-5, rad2deg(U_max(2))+5]);
+    nexttile(t_layout_u); stairs(0:t_sim-1, storia_u(2,:) * 180 / pi, '-g', 'LineWidth', 1.5); hold on;
+    yline(U_max(2) * 180 / pi, 'k--'); yline(U_min(2) * 180 / pi, 'k--'); yline(u_ref(2) * 180 / pi, 'r--', 'LineWidth', 1.2);
+    title(' Elevatore [deg]'); grid on;
     
-    nexttile(t_layout_u); stairs(0:t_sim-1, rad2deg(storia_u(3,:)), '-g', 'LineWidth', 1.5); hold on;
-    yline(rad2deg(U_max(3)), 'k--'); yline(rad2deg(U_min(3)), 'k--'); yline(rad2deg(u_ref(3)), 'r--', 'LineWidth', 1.2);
-    title(' Flap [deg]'); grid on; ylim([rad2deg(U_min(3))-5, rad2deg(U_max(3))+5]);
+    nexttile(t_layout_u); stairs(0:t_sim-1, storia_u(3,:) * 180 / pi, '-g', 'LineWidth', 1.5); hold on;
+    yline(U_max(3) * 180 / pi, 'k--'); yline(U_min(3) * 180 / pi, 'k--'); yline(u_ref(3) * 180 / pi, 'r--', 'LineWidth', 1.2);
+    title(' Flap [deg]'); grid on;
 end

@@ -24,7 +24,7 @@ G = Bwind * diag([sigma_vento_1, sigma_vento_2]);
 % 3. Simulazione Anello Chiuso Stocastico
 disp('--- Avvio Simulazione MPC ANELLO CHIUSO con Vento ---');
 % Lanciamo la nuova funzione che calcola il quadprog ad ogni step con lo stato perturbato
-[storia_x_stoc, storia_u_stoc, storia_costo_stoc] = simula_mpc_stocastico(mpc_prob, x_iniziale, t_sim, A_long_ds, B_ctrl_ds, dU_max, G, Ts);
+[storia_x_stoc, storia_u_stoc, storia_costo_stoc, storia_vento] = simula_mpc_stocastico(mpc_prob, x_iniziale, t_sim, A_long_ds, B_ctrl_ds, dU_max, G, Ts);
 disp('Simulazione Completata!');
 
 % 4. Plot dei risultati Comparativi
@@ -71,15 +71,15 @@ end
 
 %% 5. Overlay della Traiettoria sul Control Invariant Set (CIS)
 disp('Generazione di un nuovo grafico 3D del CIS per la traiettoria stocastica...');
-% Cancelliamo il contenuto del tab CIS esistente (creato da MPC.m) e lo ridisegniamo
-delete(allchild(tabs.cis_3d));
+% Cancelliamo il contenuto del tab CIS stocastico (se l'utente l'ha lanciato più volte) e lo ridisegniamo
+delete(allchild(tabs.stoc_cis_3d));
 % In questo modo evitiamo completamente i bug del motore grafico OpenGL di MATLAB 
 % ("Could not find node in peer tree") che si verificano cercando di modificare 
 % figure complesse rimaste in background.
-plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max, tabs.cis_3d);
+plot_cis(G_inf, g_inf, x_ref, mpc_prob, A_long_ds, dU_max, tabs.stoc_cis_3d);
 
 % Recuperiamo l'oggetto axes (il grafico vero e proprio) dentro la scheda CIS
-ax_cis = findobj(tabs.cis_3d, 'Type', 'axes');
+ax_cis = findobj(tabs.stoc_cis_3d, 'Type', 'axes');
 
 % La funzione plot_cis lascia la figura attiva con "hold on"
 % 1. Tracciamo la traiettoria Nominale (Blu) per confronto

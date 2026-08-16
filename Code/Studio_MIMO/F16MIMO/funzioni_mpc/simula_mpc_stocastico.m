@@ -1,14 +1,16 @@
-function [storia_x, storia_u, storia_costo] = simula_mpc_stocastico(mpc_prob, x_iniziale, t_sim, A_long_ds, B_ctrl_ds, dU_max, G, Ts)
+function [storia_x, storia_u, storia_costo, storia_vento] = simula_mpc_stocastico(mpc_prob, x_iniziale, t_sim, A_long_ds, B_ctrl_ds, dU_max, G, Ts)
     % SIMULA_MPC_STOCASTICO Risolve il problema quadratico e simula l'evoluzione 
     % del sistema perturbato da rumore stocastico (Vento) in anello chiuso.
     nx = mpc_prob.nx;
     nu = mpc_prob.nu;
     N = mpc_prob.N;
     n_vars = mpc_prob.n_vars;
+    n_noise = size(G, 2);
     
     storia_x = zeros(nx, t_sim+1); storia_x(:,1) = x_iniziale;
     storia_u = zeros(nu, t_sim);
     storia_costo = zeros(1, t_sim);
+    storia_vento = zeros(n_noise, t_sim);
     u_previous = [0;0;0]; 
     options = optimoptions('quadprog', 'Display', 'off');
     % --- Precomputazione Matrici Invarianti ---
@@ -56,8 +58,9 @@ function [storia_x, storia_u, storia_costo] = simula_mpc_stocastico(mpc_prob, x_
         storia_u(:, t) = u_applicata;
         
         % --- INIEZIONE MOTO BROWNIANO (TURBOLENZA) ---
-        dW_wiener = sqrt(Ts) * randn(n_noise, 1);
-        dx_stoch = G * dW_wiener;
+        vento_step = sqrt(Ts) * randn(n_noise, 1);
+        storia_vento(:, t) = vento_step;
+        dx_stoch = G * vento_step;
         
         % PLANT ANELLO CHIUSO: Aggiornamento stato perturbato
         storia_x(:, t+1) = A_long_ds * storia_x(:,t) + B_ctrl_ds * u_applicata + dx_stoch;

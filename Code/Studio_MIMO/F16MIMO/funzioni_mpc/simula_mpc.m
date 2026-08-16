@@ -44,11 +44,11 @@ function [storia_x, storia_u, storia_costo] = simula_mpc(mpc_prob, x_iniziale, t
         b_rate(1:2*nu) = [dU_max + u_previous; dU_max - u_previous];
         b_ineq_tot = [mpc_prob.b_ineq_stat; b_rate];
         [z_opt, fval, exitflag] = quadprog(mpc_prob.H, mpc_prob.f, A_ineq_tot, b_ineq_tot, mpc_prob.Aeq_base, beq, mpc_prob.lb, mpc_prob.ub, [], options);
-        storia_costo(t) = fval;
-        
         if exitflag < 0
             error('Infeasible! Il punto allo step %d è fuori da X_N. Riduci leggermente la severità di x_iniziale.', t);
         end
+        
+        storia_costo(t) = fval;
         
         % L'animazione live è stata rimossa per massimizzare le prestazioni.
         

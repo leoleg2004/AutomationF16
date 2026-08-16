@@ -21,14 +21,11 @@ function plot_mpc_cost_3d(mpc_prob, A_long_ds, dU_max, storia_x, storia_costo, T
         fig1 = figure('Name', sprintf('Costo MPC 3D (Ts = %g s)', Ts), 'Color', 'w', 'Position', [150 150 850 650]);
         parent_tab = fig1;
     end
-    rad2deg = 180 / pi;
-
-    w_lim = 40;  % ft/s
-    q_lim = 40;  % deg/s
+    w_lim = 40;  % m/s
+    q_lim = 1.0; % rad/s
 
     % Usiamo una griglia 20x20 per un calcolo rapido
-    [W_grid, Q_deg] = meshgrid(linspace(-w_lim, w_lim, 20), linspace(-q_lim, q_lim, 20));
-    Q_rad = Q_deg / rad2deg; 
+    [W_grid, Q_rad] = meshgrid(linspace(-w_lim, w_lim, 20), linspace(-q_lim, q_lim, 20));
 
     nx = mpc_prob.nx;
     nu = mpc_prob.nu;
@@ -50,7 +47,7 @@ function plot_mpc_cost_3d(mpc_prob, A_long_ds, dU_max, storia_x, storia_costo, T
     ax = axes('Parent', parent_tab);
     hold(ax, 'on'); grid(ax, 'on');
     
-    h_surf = surf(ax, W_grid, Q_deg, V_surf, 'EdgeColor', 'none', 'FaceAlpha', 0.65);
+    h_surf = surf(ax, W_grid, Q_rad, V_surf, 'EdgeColor', 'none', 'FaceAlpha', 0.65);
     colormap(ax, jet);
     cb = colorbar(ax);
     ylabel(cb, 'Costo Ottimo MPC $J^*(x_k)$', 'Interpreter', 'latex', 'FontSize', 12);
@@ -66,26 +63,26 @@ function plot_mpc_cost_3d(mpc_prob, A_long_ds, dU_max, storia_x, storia_costo, T
     t_fine = linspace(1, N_steps, N_steps * 10);
     
     W_smooth = pchip(t_discrete, storia_x(4,1:N_steps), t_fine);
-    Q_smooth = pchip(t_discrete, storia_x(2,1:N_steps) * rad2deg, t_fine);
+    Q_smooth = pchip(t_discrete, storia_x(2,1:N_steps), t_fine);
     V_smooth = pchip(t_discrete, storia_costo, t_fine);
     
     h_line = plot3(ax, W_smooth, Q_smooth, V_smooth, '-r', 'LineWidth', 2);
 
     % Punti discreti veri
-    plot3(ax, storia_x(4,1:N_steps), storia_x(2,1:N_steps) * rad2deg, storia_costo, 'o', ...
+    plot3(ax, storia_x(4,1:N_steps), storia_x(2,1:N_steps), storia_costo, 'o', ...
           'MarkerEdgeColor', 'r', 'MarkerFaceColor', 'w', 'MarkerSize', 4);
           
     % Start
-    h_start = plot3(ax, storia_x(4,1), storia_x(2,1) * rad2deg, storia_costo(1), 'o', ...
+    h_start = plot3(ax, storia_x(4,1), storia_x(2,1), storia_costo(1), 'o', ...
                     'MarkerFaceColor', 'r', 'MarkerEdgeColor', 'k', 'MarkerSize', 8);
     
     % End
-    h_end = plot3(ax, storia_x(4,N_steps), storia_x(2,N_steps) * rad2deg, storia_costo(N_steps), 's', ...
+    h_end = plot3(ax, storia_x(4,N_steps), storia_x(2,N_steps), storia_costo(N_steps), 's', ...
           'MarkerFaceColor', 'g', 'MarkerEdgeColor', 'k', 'MarkerSize', 8);
 
     title(ax, sprintf('\\textbf{Funzionale di Costo MPC $J^*(x_k)$ a Tempo Discreto ($T_s = %g$ s)}', Ts), 'Interpreter', 'latex', 'FontSize', 16);
-    xlabel(ax, 'Velocit\`a Verticale $w$ [ft/s]', 'Interpreter', 'latex', 'FontSize', 12);
-    ylabel(ax, 'Pitch Rate $q$ [deg/s]', 'Interpreter', 'latex', 'FontSize', 12);
+    xlabel(ax, 'Velocit\`a Verticale $w$ [m/s]', 'Interpreter', 'latex', 'FontSize', 12);
+    ylabel(ax, 'Velocit\`a di Beccheggio $q$ [rad/s]', 'Interpreter', 'latex', 'FontSize', 12);
     zlabel(ax, 'Costo $J^*(x_k)$', 'Interpreter', 'latex', 'FontSize', 12);
     
     legend(ax, [h_surf, h_line, h_start, h_end], ...
