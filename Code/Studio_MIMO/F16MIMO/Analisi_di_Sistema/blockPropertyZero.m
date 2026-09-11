@@ -56,7 +56,7 @@ disp('Zeri Invarianti calcolati per il 2x2:');
 disp(Zeri_2x2);
 
 if ~isempty(Zeri_2x2)
-    % Prende il primo zero (che sarà lo zero di macchina ~ 1e-15)
+    % Prende il primo zero (reale)
     lambda = Zeri_2x2(1); 
     
     % Matrice di Rosenbrock
@@ -67,40 +67,72 @@ if ~isempty(Zeri_2x2)
     N = null(P_lambda); 
     
     if ~isempty(N)
-        % Estrazione direzioni (parte reale per sicurezza contro rumore numerico)
+        % Estrazione direzioni (parte reale per sicurezza)
         x0 = real(N(1:n_stati, 1));
         u0 = real(N(n_stati+1:end, 1));
         
-        % Simulazione
-        t = 0:0.01:10; 
-        u_t = (u0 * exp(real(lambda) * t))'; 
+        % Vettore d'ingresso perturbato (direzione errata)
+        u0_errato = u0;
+        u0_errato(1) = -u0_errato(1); % Invertiamo un segno per rovinare la direzione
         
-        [y_sim, t_sim, x_sim] = lsim(sys_2x2, u_t, t, x0);
+        % Vettore tempo
+        t = 0:0.01:5; 
+        
+        % Ingressi nel tempo
+        u_t_corretto = (u0 * exp(real(lambda) * t))'; 
+        u_t_errato   = (u0_errato * exp(real(lambda) * t))'; 
         
         % ==========================================
-        % GRAFICO FORMATTATO PER IL REPORT
+        % CASO 1: Condizione Perfetta (Proprietà Bloccante Attiva)
         % ==========================================
-        fig = figure('Name', 'Proprieta_Bloccante_2x2', 'Color', 'w', 'Position', [100, 100, 700, 500]);
+        [y_sim_1, t_sim_1, x_sim_1] = lsim(sys_2x2, u_t_corretto, t, x0);
         
-        % Subplot Ingressi
-        subplot(2,1,1);
-        plot(t, u_t, 'LineWidth', 2);
-        title('Ingressi Bloccanti (Condizione di Trim)', 'FontSize', 12, 'FontWeight', 'bold');
-        ylabel('Ampiezza Comando');
-        legend('Spinta (Thrust)', 'Equilibratore (Elevator)', 'Location', 'best');
+        % ==========================================
+        % CASO 2: Stato Iniziale Nullo (x0 = 0)
+        % ==========================================
+        [y_sim_2, t_sim_2, x_sim_2] = lsim(sys_2x2, u_t_corretto, t, zeros(n_stati,1));
+        
+        % ==========================================
+        % CASO 3: Direzione d'Ingresso Errata
+        % ==========================================
+        [y_sim_3, t_sim_3, x_sim_3] = lsim(sys_2x2, u_t_errato, t, x0);
+        
+        % ==========================================
+        % GRAFICO FORMATTATO PER LA TESI (3 CASISTICHE)
+        % ==========================================
+        fig = figure('Name', 'Proprieta_Bloccante_2x2_Completa', 'Color', 'w', 'Position', [100, 100, 1000, 600]);
+        
+        % Limiti Y globali per confrontare equamente
+        ymax = max([max(abs(y_sim_2(:))), max(abs(y_sim_3(:))), 1e-3]);
+        
+        % CASO 1
+        subplot(1,3,1);
+        plot(t, y_sim_1, 'LineWidth', 2);
+        title({'CASO 1: Blocco Perfetto', 'x(0) = x_0, u(t) = u_0 e^{\lambda t}'}, 'FontSize', 10, 'FontWeight', 'bold');
+        xlabel('Tempo [s]'); ylabel('Variazione Uscite (Y)');
+        ylim([-ymax ymax]);
         grid on;
-        
-        % Subplot Uscite
-        subplot(2,1,2);
-        plot(t, y_sim, 'LineWidth', 2);
-        title('Risposta del Sottosistema (Uscite Mascherate)', 'FontSize', 12, 'FontWeight', 'bold');
-        xlabel('Tempo [s]');
-        ylabel('Variazione Uscita');
-        ylim([-0.05 0.05]); % Limiti stretti per evidenziare che è esattamente zero
         legend('$V_t$', '$q$', 'Location', 'best', 'Interpreter', 'latex');
+        
+        % CASO 2
+        subplot(1,3,2);
+        plot(t, y_sim_2, 'LineWidth', 2);
+        title({'CASO 2: Errore Stato Iniziale', 'x(0) = 0, u(t) = u_0 e^{\lambda t}'}, 'FontSize', 10, 'FontWeight', 'bold');
+        xlabel('Tempo [s]');
+        ylim([-ymax ymax]);
         grid on;
         
-        disp('Grafico generato. Salvalo per il report!');
+        % CASO 3
+        subplot(1,3,3);
+        plot(t, y_sim_3, 'LineWidth', 2);
+        title({'CASO 3: Errore Direzione Input', 'x(0) = x_0, u(t) = u_{err} e^{\lambda t}'}, 'FontSize', 10, 'FontWeight', 'bold');
+        xlabel('Tempo [s]');
+        ylim([-ymax ymax]);
+        grid on;
+        
+        sgtitle('Verifica della Proprietà Bloccante degli Zeri nel Sottosistema 2x2', 'FontSize', 14, 'FontWeight', 'bold');
+        
+        disp('Grafico generato con le 3 casistiche. Salvalo per la tesi!');
     else
         disp('Errore: Nullspace vuoto.');
     end

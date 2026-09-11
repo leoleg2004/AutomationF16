@@ -11,6 +11,31 @@
 
 %script usato utilizzando lo particle swarm optimization e impostando i
 %vincoli di volo di crociera dell'aereo in volo di crociera
+
+%% Caricamento automatico dei parametri di sistema (se mancanti)
+if ~exist('Param', 'var') || ~exist('IC', 'var')
+    disp('Parametri di base non trovati nel workspace. Caricamento automatico in corso...');
+    try
+        startup; % Carica le path
+    catch
+        addpath(fullfile(fileparts(mfilename('fullpath')), '..'));
+        startup_project;
+    end
+    conversion;
+    Param = load_F16_params();
+    h0_auto = -10000 * 0.3048; % -10000 ft in metri
+    Vt0_auto = 300 * 0.3048;   % 300 ft/s in metri
+    IC.inertial_position = [0, 0, h0_auto];
+    IC.body_velocity = [Vt0_auto, 0, 0];
+    IC.euler_angles = [0, 0, 0];
+    IC.omega = [0, 0, 0];
+    Tend = 2.0; % StopTime per Simulink
+end
+
+if ~exist('Tend', 'var')
+    Tend = 2.0;
+end
+
 %% Specifiche del modello F16
 model = 'F16';
 opspec = operspec(model);
@@ -68,7 +93,7 @@ ub_pso = [control.ub(1), control.ub(2), control.ub(5),  25*d2r];
 disp('--- Avvio Ottimizzazione Stocastica a 4 GRADI DI LIBERTÀ ---');
 disp('Le particelle stanno cercando l''assetto perfetto...');
 
-pso_opt = optimoptions('particleswarm', 'SwarmSize', 30, 'MaxIterations', 20, 'Display', 'iter');
+pso_opt = optimoptions('particleswarm', 'SwarmSize', 30, 'MaxIterations', 50, 'Display', 'iter', 'PlotFcn', {@pswplotbestf, @pswplot3D});
 
 % Lanciamo lo sciame (nota il 4 invece del 3)
 [best_u, best_cost] = particleswarm(@(u_try) costo_stocastico(u_try, model), 4, lb_pso, ub_pso, pso_opt);
