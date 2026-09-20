@@ -67,28 +67,5 @@ To ensure FlightGear acts purely as a visual renderer without interfering with S
 
 ---
 
-## 🛠️ How to Start the Simulation
 
-Follow these steps in strict order to ensure numerical stability at initialization:
-
-1. **MATLAB Setup:** Execute the main MATLAB script (e.g., `init.m` or `setup.m`) to load constants, geometry, and aerodynamic coefficients, and to calculate the Trim point.
-2. **Launch FlightGear:** Start FlightGear with the FDM disabled and the correct network options configured. Wait for the scenario to fully load.
-3. **Hardware Check:** Ensure your Joystick/HOTAS is connected and perfectly centered. An asymmetrical input at T=0 on an unstable aircraft will cause instantaneous numerical errors.
-4. **Start Simulink Simulation:** Press PLAY on Simulink. The system will begin calculating the state equations and transmitting coordinates over the network to FlightGear.🛠️ How to Start the Simulation
-Follow these steps in strict order to ensure numerical stability at initialization:
-1
-Run Initialization Script
-MATLAB Setup
-Execute the main MATLAB script (e.g., matlab.m) to load constants, geometry, and for aerodynamic coefficients start the script trim-and_linearize.m for calculating the Trim point.
-2
-Launch FlightGear
-Visual Engine
-Start FlightGear with the FDM disabled and the correct network options configured. Wait for the scenario to fully load.
-3
-Hardware Check
-Critical for Stability
-Ensure your Joystick/HOTAS is connected and perfectly centered. An asymmetrical input at T=0 on an unstable aircraft will cause instantaneous numerical errors.
-4
-Start Simulink Simulation
-Physics Engine
 Press PLAY on Simulink. The system will begin calculating the state equations and transmitting coordinates over the network to FlightGear.
